@@ -19,10 +19,8 @@ print "Loading images and labels..."
 # Loading the data as images
 DATA = np.load("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_80_80_full_no_zeros_in_cells.npy")
 labels = np.load("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/labels_80_80_full_no_zeros_in_cells.npy")
+
 print "all loaded."
-
-print 
-
 
 print "Loading model AlexNet..."
 #load the model

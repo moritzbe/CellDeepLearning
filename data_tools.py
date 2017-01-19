@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas
 import itertools
 import code
+import lmdb
 
 
 
@@ -105,6 +106,24 @@ def accuracy(y_test, pred):
 			rights += 1
 	accuracy = float(rights) / float(len(y_test))
 	return round(accuracy, 4)*100
+
+def readLMDB(db_path):
+	env = lmdb.open(db_path, readonly=True)
+	with env.begin() as txn:
+	    raw_datum = txn.get(b'00000000')
+
+	datum = caffe.proto.caffe_pb2.Datum()
+	datum.ParseFromString(raw_datum)
+
+	flat_x = np.fromstring(datum.data, dtype=np.uint8)
+	print flat_x.shape
+	X = flat_x.reshape(datum.channels, datum.height, datum.width)
+	# y = datum.label
+
+	# with env.begin() as txn:
+	#     cursor = txn.cursor()
+	#     for key, value in cursor:
+	#         print(key, value)
 
 
 
