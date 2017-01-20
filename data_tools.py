@@ -4,10 +4,10 @@ from StringIO import StringIO
 from sklearn.metrics import confusion_matrix
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
-import pandas
 import itertools
+# import pandas
 import code
-import lmdb
+# import lmdb
 
 
 
@@ -34,17 +34,17 @@ def normalize(DATA):
 	return DATA
 
 
-def saveToCSV(y, alg_name="alg"):
-	ImageId = []
-	for i in range(1, y.shape[0]+1):
-		ImageId.append(i)
+# def saveToCSV(y, alg_name="alg"):
+# 	ImageId = []
+# 	for i in range(1, y.shape[0]+1):
+# 		ImageId.append(i)
 
-	submission = pandas.DataFrame({
-        "ImageId": ImageId,
-        "Label": y
-    })
-	filename = "kaggle_mnist_" + alg_name + ".csv"
-	submission.to_csv(filename, index=False)
+# 	submission = pandas.DataFrame({
+#         "ImageId": ImageId,
+#         "Label": y
+#     })
+# 	filename = "kaggle_mnist_" + alg_name + ".csv"
+# 	submission.to_csv(filename, index=False)
 
 
 
@@ -107,18 +107,18 @@ def accuracy(y_test, pred):
 	accuracy = float(rights) / float(len(y_test))
 	return round(accuracy, 4)*100
 
-def readLMDB(db_path):
-	env = lmdb.open(db_path, readonly=True)
-	with env.begin() as txn:
-	    raw_datum = txn.get(b'00000000')
+# def readLMDB(db_path):
+# 	env = lmdb.open(db_path, readonly=True)
+# 	with env.begin() as txn:
+# 	    raw_datum = txn.get(b'00000000')
 
-	datum = caffe.proto.caffe_pb2.Datum()
-	datum.ParseFromString(raw_datum)
+# 	datum = caffe.proto.caffe_pb2.Datum()
+# 	datum.ParseFromString(raw_datum)
 
-	flat_x = np.fromstring(datum.data, dtype=np.uint8)
-	print flat_x.shape
-	X = flat_x.reshape(datum.channels, datum.height, datum.width)
-	# y = datum.label
+# 	flat_x = np.fromstring(datum.data, dtype=np.uint8)
+# 	print flat_x.shape
+# 	X = flat_x.reshape(datum.channels, datum.height, datum.width)
+# 	# y = datum.label
 
 	# with env.begin() as txn:
 	#     cursor = txn.cursor()
