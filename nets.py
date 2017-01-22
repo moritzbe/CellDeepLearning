@@ -68,7 +68,7 @@ import tensorflow as tf
 def covNetSimple():
 	nb_classes = 4
 	model = Sequential()
-	model.add(Convolution2D(32, 3, 3, border_mode='same', input_shape=(80, 80, 4)))
+	model.add(Convolution2D(32, 3, 3, border_mode='same', input_shape=(40, 40, 4)))
 	# size (32, 80, 80)
 	model.add(Activation('relu'))
 	model.add(Dropout(0.2))
