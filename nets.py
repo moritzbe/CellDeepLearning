@@ -68,32 +68,27 @@ import tensorflow as tf
 def covNetSimple():
 	nb_classes = 4
 	model = Sequential()
-	model.add(Convolution2D(32, 3, 3, border_mode='same', input_shape=(80, 80, 4)))
-	# size (32, 80, 80)
+	model.add(Convolution2D(4, 3, 3, border_mode='same', input_shape=(40, 40, 4)))
 	model.add(Activation('relu'))
-	model.add(Dropout(0.1))
-	model.add(MaxPooling2D(pool_size=(2, 2)))
-	# size (32, 40, 40)
-	model.add(Convolution2D(64, 3, 3, border_mode='same'))
-	# size (64, 40, 40)
+	model.add(Convolution2D(4, 3, 3, border_mode='same'))
 	model.add(Activation('relu'))
 	model.add(MaxPooling2D(pool_size=(2, 2)))
-	# size (64, 20, 20)
 	model.add(Dropout(0.1))
-	model.add(Convolution2D(64, 3, 3, border_mode='same'))
+	# size (32, 20, 20)
+	model.add(Convolution2D(8, 3, 3, border_mode='same'))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(8, 3, 3, border_mode='same'))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.1))
 	# size (64, 10, 10)
-	model.add(Activation('relu'))
-	model.add(MaxPooling2D(pool_size=(2, 2)))
-	# size (64, 14, 14)
-	model.add(Dropout(0.25))
-
 	model.add(Flatten())
 	model.add(Dense(300))
 	model.add(Activation('relu'))
-	model.add(Dropout(.5))
+	model.add(Dropout(.25))
 	model.add(Dense(100))
 	model.add(Activation('relu'))
-	model.add(Dropout(.5))
+	model.add(Dropout(.25))
 	model.add(Dense(4))
 	model.add(Activation('softmax'))
 
@@ -103,9 +98,7 @@ def covNetSimple():
 	# score = model.evaluate(X, y, verbose=0)
 	# print 'Train score:', score[0]
 	# print 'Train accuracy:', score[1]
-	sgd = SGD(lr=1e-2, decay=1e-6, momentum=0.9, nesterov=True)
-	model.compile(optimizer=sgd, loss='sparse_categorical_crossentropy')
-
+	model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 	return model
 
 
@@ -216,31 +209,104 @@ def covNetSimple():
 # 	# return model
 # 	return model
 
+
+def covNetSimpleOld():
+	print "newNew"
+	nb_classes = 4
+	model = Sequential()
+	model.add(Convolution2D(16, 3, 3, border_mode='same', input_shape=(40, 40, 4)))
+	model.add(Activation('relu'))
+	model.add(Dropout(0.25))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	# size (32, 40, 40)
+	model.add(Convolution2D(32, 3, 3))
+	# size (64, 40, 40)
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	# size (64, 14, 14)
+	model.add(Dropout(0.25))
+
+	model.add(Flatten())
+	model.add(Dense(100))
+	model.add(Activation('relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(4))
+	model.add(Activation('softmax'))
+
+	model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+	return model
+
+def create_model_old():
+	nb_classes = 4
+	model = Sequential()
+	model.add(Convolution2D(8, 3, 3, border_mode='same', input_shape=(40, 40, 4)))
+	# size (32, 80, 80)
+	model.add(Activation('relu'))
+	model.add(Dropout(0.1))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	# size (32, 40, 40)
+	model.add(Convolution2D(16, 3, 3, border_mode='same'))
+	# size (64, 40, 40)
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	# size (64, 20, 20)
+	model.add(Dropout(0.1))
+	model.add(Convolution2D(32, 3, 3, border_mode='same'))
+	# size (64, 10, 10)
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	# size (64, 14, 14)
+	model.add(Dropout(0.25))
+
+	model.add(Flatten())
+	model.add(Dense(300))
+	model.add(Activation('relu'))
+	model.add(Dropout(.5))
+	model.add(Dense(100))
+	model.add(Activation('relu'))
+	model.add(Dropout(.5))
+	model.add(Dense(4))
+	model.add(Activation('softmax'))
+	sgd = SGD(lr=1e-2, decay=1e-6, momentum=0.9, nesterov=True)
+	model.compile(optimizer=sgd, loss='sparse_categorical_crossentropy')
+
+	return model
+
 def create_model():
-    model = Sequential()
-    model.add(ZeroPadding2D((1, 1), input_shape=(40, 40, 4), dim_ordering='tf'))
-    model.add(Convolution2D(3, 3, 4, activation='relu', dim_ordering='tf'))
-    model.add(ZeroPadding2D((1, 1), dim_ordering='tf'))
-    model.add(Convolution2D(3, 3, 4, activation='relu', dim_ordering='tf'))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2), dim_ordering='tf'))
+	nb_classes = 4
+	model = Sequential()
+	# model.add(ZeroPadding2D((1, 1), input_shape=(40, 40, 4)))
+	model.add(Convolution2D(4, 3, 3, border_mode='same', input_shape=(40, 40, 4)))
 
-    model.add(ZeroPadding2D((1, 1), dim_ordering='tf'))
-    model.add(Convolution2D(3, 3, 8, activation='relu', dim_ordering='tf'))
-    model.add(ZeroPadding2D((1, 1), dim_ordering='tf'))
-    model.add(Convolution2D(3, 3, 8, activation='relu', dim_ordering='tf'))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2), dim_ordering='tf'))
+	# model.add(Convolution2D(4, 3, 3))
+	model.add(Activation('relu'))
+	model.add(ZeroPadding2D((1, 1)))
+	model.add(Convolution2D(4, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
 
-    model.add(Flatten())
-    model.add(Dense(32, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(32, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(4, activation='softmax'))
+	model.add(ZeroPadding2D((1, 1)))
+	model.add(Convolution2D(8, 3, 3))
+	model.add(Activation('relu'))
+	model.add(ZeroPadding2D((1, 1)))
+	model.add(Convolution2D(8, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
 
-    sgd = SGD(lr=1e-2, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss='sparse_categorical_crossentropy')
+	model.add(Flatten())
+	model.add(Dense(32))
+	model.add(Activation('relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(32))
+	model.add(Activation('relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(4))
+	model.add(Activation('softmax'))
 
-    return model
+	sgd = SGD(lr=1e-2, decay=1e-6, momentum=0.9, nesterov=True)
+	model.compile(optimizer=sgd, loss='sparse_categorical_crossentropy')
+
+	return model
 
 # def covNet3Large():
 # 	model = Sequential()
