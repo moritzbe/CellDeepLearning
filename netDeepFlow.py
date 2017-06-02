@@ -10,6 +10,11 @@ from keras.layers.pooling import MaxPooling2D, AveragePooling2D
 import numpy as np
 import code
 import tensorflow as tf
+# Nick and Phil´s Training Details:
+# The network was trained for 100 epochs using stochastic gradient descent
+# with standard 318 parameters: 0.9 momentum, a fixed learning rate of 0.01
+# up to epoch 85 and of 0.001 319 afterwards as well as a slightly regularizing
+# weight decay of 0.0005.
 
 # Basic Conv + BN + ReLU factory
 # padding same - > same output size, padding is added according to kernel
@@ -20,6 +25,7 @@ def convFactory(data, num_filter, kernel, stride=(1,1), pad="valid", act_type="r
 	return act
 
 # A Simple Downsampling Factory
+# pixel dimensions = ((a+2)/2,(a+2)/2)
 def downsampleFactory(data, ch_3x3):
 	# conv 3x3
 	conv = convFactory(data=data, num_filter = ch_3x3, kernel=(3, 3), stride=(2, 2), pad="same", act_type="relu")
@@ -41,28 +47,29 @@ def simpleFactory(data, ch_1x1, ch_3x3):
 	return concat
 
 def deepflow():
-	inputs = Input(shape=(60, 60, 4))
+	inputs = Input(shape=(66, 66, 4)) # 66x66
 	conv1 = convFactory(data=inputs, num_filter=96 , kernel=(3,3), pad="same", act_type="relu")
 	in3a = simpleFactory(conv1, 32, 32)
 	in3b = simpleFactory(in3a, 32, 48)
-	in3c = downsampleFactory(in3b, 80)
+	in3c = downsampleFactory(in3b, 80) # 34x34
 	in4a = simpleFactory(in3c, 112, 48)
 	in4b = simpleFactory(in4a, 96, 64)
 	in4c = simpleFactory(in4b, 80, 80)
 	in4d = simpleFactory(in4c, 48, 96)
-	in4e = downsampleFactory(in4d, 96)
+	in4e = downsampleFactory(in4d, 96) # 17x17
 	in5a = simpleFactory(in4e, 176, 160)
 	in5b = simpleFactory(in5a, 176, 160)
-	in6a = downsampleFactory(in5b, 96)
+	in6a = downsampleFactory(in5b, 96) # 8x8
 	in6b = simpleFactory(in6a, 176, 160)
 	in6c = simpleFactory(in6b, 176, 160)
-	# pool = mx.symbol.Pooling(data=in6c, pool_type="avg", kernel=(8,8), name="global_avg")
-	pool = AveragePooling2D(pool_size=(8, 8), strides=None, padding='valid', data_format=None)(in6c)
+	pool = AveragePooling2D(pool_size=(8, 8), strides=None, padding='same', data_format=None)(in6c)
 	flatten = Flatten()(pool)
 	fc = Dense(7, activation=None)(flatten)
 	softmax = Activation(activation="softmax")(fc)
 	model = Model(inputs=inputs, outputs=softmax)
-	model.compile(optimizer='rmsprop', loss='binary_crossentropy', loss_weights=0.2)
-	# model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+	# model.compile(optimizer='rmsprop', loss='binary_crossentropy')
+	model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+
+
 	return model
 model = deepflow()

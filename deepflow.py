@@ -15,7 +15,13 @@ import code
 
 data_normalization = False
 
-
+def naiveReshape(X, target_pixel_size):
+    X_out = np.zeros([X.shape[0], target_pixel_size, target_pixel_size, X.shape[-1]])
+    for i in xrange(X.shape[0]):
+        for ch in xrange(X.shape[-1]):
+            # code.interact(local=dict(globals(), **locals()))
+            X_out[i,:,:,ch]=X[i,:target_pixel_size,:target_pixel_size,ch]
+    return X_out
 # Paths
 path_train_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_80_80_full_no_zeros_in_cells.npy"
 path_train_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/labels_80_80_full_no_zeros_in_cells.npy"
@@ -42,6 +48,10 @@ print "Testlabels shape = ", y_test.shape
 
 X_train = X_train.reshape(X_train.shape[0], X_train.shape[3], X_train.shape[2], X_train.shape[1])
 X_test = X_test.reshape(X_test.shape[0], X_test.shape[3], X_test.shape[2], X_test.shape[1])
+
+X_train = naiveReshape(X_train, target_pixel_size=66)
+X_test = naiveReshape(X_test, target_pixel_size=66)
+
 print "Reshaping done"
 
 print X_train.shape
@@ -69,9 +79,9 @@ def get_validation_predictions(train_data, predictions_valid):
 
 def run_cross_validation_create_models(nfolds, X_train, X_test, y_train):
     # input image dimensions
-    batch_size = 1
-    nb_epoch = 1
-    random_state = 51
+    batch_size = 100
+    nb_epoch = 3
+    random_state = 17
 
     train_data = X_train
     train_target = y_train
@@ -97,7 +107,7 @@ def run_cross_validation_create_models(nfolds, X_train, X_test, y_train):
         callbacks = [
             EarlyStopping(monitor='val_loss', patience=5, verbose=0),
         ]
-        model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch, shuffle=True, verbose=2, validation_data=(X_valid, Y_valid), callbacks=callbacks)
+        model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch, shuffle=True, verbose=2, validation_data=(X_valid, Y_valid), callbacks=callbacks)
 
         predictions_valid = model.predict(X_valid.astype('float32'), batch_size=batch_size, verbose=2)
         score = log_loss(Y_valid, predictions_valid)
