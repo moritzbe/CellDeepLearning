@@ -1,6 +1,6 @@
-from data_tools import *
-from algorithms import *
-from plot_lib import *
+# from data_tools import *
+# from algorithms import *
+# from plot_lib import *
 from netDeepFlow import *
 from sklearn.model_selection import cross_val_score, StratifiedKFold, train_test_split
 from sklearn.feature_selection import RFE
@@ -10,30 +10,53 @@ from keras.optimizers import SGD
 from keras.callbacks import EarlyStopping
 from sklearn.metrics import log_loss
 import numpy as np
-import tensorflow as tf
 import code
+import os
 
 data_normalization = False
+server = True
+gpu = [0]
+batch_size = 32
+nb_epoch = 5
+num_folds = 3 # Cross validation
+random_state = 17
+
+os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in gpu])
+
+def loadnumpy(filename):
+	array = np.load(filename)
+	return array
+
 
 def naiveReshape(X, target_pixel_size):
     X_out = np.zeros([X.shape[0], target_pixel_size, target_pixel_size, X.shape[-1]])
-    for i in xrange(X.shape[0]):
-        for ch in xrange(X.shape[-1]):
-            # code.interact(local=dict(globals(), **locals()))
+    for i in range(X.shape[0]):
+        for ch in range(X.shape[-1]):
             X_out[i,:,:,ch]=X[i,:target_pixel_size,:target_pixel_size,ch]
     return X_out
 # Paths
-path_train_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_80_80_full_no_zeros_in_cells.npy"
-path_train_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/labels_80_80_full_no_zeros_in_cells.npy"
-path_test_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/all_channels_80_80_full_no_zeros_in_cells.npy"
-path_test_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/labels_80_80_full_no_zeros_in_cells.npy"
+path_to_server_data = "/home/moritz_berthold/cellData"
 
-print "Loading training and test data"
+if not server:
+    path_train_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_66_66_full_no_zeros_in_cells.npy"
+    path_train_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/labels_66_66_full_no_zeros_in_cells.npy"
+    path_test_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/all_channels_66_66_full_no_zeros_in_cells.npy"
+    path_test_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/labels_66_66_full_no_zeros_in_cells.npy"
+
+if server:
+    path_train_data = path_to_server_data + "/Ex1/all_channels_66_66_full_no_zeros_in_cells.npy"
+    path_train_labels = path_to_server_data + "/Ex1/labels_66_66_full_no_zeros_in_cells.npy"
+    path_test_data = path_to_server_data + "/Ex2/all_channels_66_66_full_no_zeros_in_cells.npy"
+    path_test_labels = path_to_server_data + "/Ex2/labels_66_66_full_no_zeros_in_cells.npy"
+
+
+print("Loading training and test data")
 X_train = np.array(loadnumpy(path_train_data), dtype = np.uint8).astype('float32')
 y_train = np.load(path_train_labels)[:,0]
 X_test = np.array(loadnumpy(path_test_data), dtype = np.uint8).astype('float32')
 y_test = np.load(path_test_labels)[:,0]
-print "done"
+print("done")
+
 
 # sensible?
 if data_normalization:
@@ -41,10 +64,10 @@ if data_normalization:
     X_train /= maximum
     X_test /= maximum
 
-print "Trainingdata shape = ", X_train.shape
-print "Traininglabels shape = ", y_train.shape
-print "Testdata shape = ", X_test.shape
-print "Testlabels shape = ", y_test.shape
+print("Trainingdata shape = ", X_train.shape)
+print("Traininglabels shape = ", y_train.shape)
+print("Testdata shape = ", X_test.shape)
+print("Testlabels shape = ", y_test.shape)
 
 X_train = X_train.reshape(X_train.shape[0], X_train.shape[3], X_train.shape[2], X_train.shape[1])
 X_test = X_test.reshape(X_test.shape[0], X_test.shape[3], X_test.shape[2], X_test.shape[1])
@@ -52,16 +75,16 @@ X_test = X_test.reshape(X_test.shape[0], X_test.shape[3], X_test.shape[2], X_tes
 X_train = naiveReshape(X_train, target_pixel_size=66)
 X_test = naiveReshape(X_test, target_pixel_size=66)
 
-print "Reshaping done"
+print("Reshaping done")
 
-print X_train.shape
-print X_test.shape
+print(X_train.shape)
+print(X_test.shape)
 
 X_train = X_train[y_train!=4, :]
 y_train = y_train[y_train!=4]
 X_test = X_test[y_test!=4, :]
 y_test = y_test[y_test!=4]
-print "- removed the last class for comparison with cell profiler"
+print("- removed the last class for comparison with cell profiler")
 
 
 def merge_several_folds_mean(data, nfolds):
@@ -79,10 +102,6 @@ def get_validation_predictions(train_data, predictions_valid):
 
 def run_cross_validation_create_models(nfolds, X_train, X_test, y_train):
     # input image dimensions
-    batch_size = 100
-    nb_epoch = 3
-    random_state = 17
-
     train_data = X_train
     train_target = y_train
 
@@ -120,13 +139,13 @@ def run_cross_validation_create_models(nfolds, X_train, X_test, y_train):
 
         test_prediction = model.predict(X_valid.astype('float32'), batch_size=batch_size, verbose=2)
         y_pred = np.zeros([test_prediction.shape[0]])
-        for i in xrange(test_prediction.shape[0]):
+        for i in range(test_prediction.shape[0]):
             y_pred[i] = np.argmax(test_prediction[i,:]).astype(int)
         plotConfusionMatrix(Y_valid.astype(int), y_pred.astype(int))
 
         scores = model.evaluate(X_valid.astype('float32'), Y_valid, verbose=0)
-        # print("Accuracy is: %.2f%%" % (scores[1]*100))
-        # accuracies += (scores[1]*100)
+        print("Accuracy is: %.2f%%" % (scores[1]*100))
+        accuracies += (scores[1]*100)
 
 
         models.append(model)
@@ -134,7 +153,6 @@ def run_cross_validation_create_models(nfolds, X_train, X_test, y_train):
     score = sum_score/len(train_data)
     print("Log_loss train independent avg: ", score)
 
-    print "No accuracy computed"
     final_accuracy = accuracies / nfolds
     print("Accuracy train independent avg: ", final_accuracy)
 
@@ -142,7 +160,7 @@ def run_cross_validation_create_models(nfolds, X_train, X_test, y_train):
     return info_string, models
 
 def process_test_with_cross_val(info_string, models, X_test):
-    batch_size = 16
+    batch_size = 32
     num_fold = 0
     yfull_test = []
     test_id = []
@@ -160,9 +178,10 @@ def process_test_with_cross_val(info_string, models, X_test):
     info_string = 'loss_' + info_string \
                 + '_folds_' + str(nfolds)
 
-    print "Result on test data done: ", test_res.shape
+    print("Result on test data done: ", test_res.shape)
     return test_res
 
-num_folds = 3
 info_string, models = run_cross_validation_create_models(num_folds, X_train, X_test, y_train)
 test_res = process_test_with_cross_val(info_string, models, X_test)
+
+code.interact(local=dict(globals(), **locals()))

@@ -9,7 +9,6 @@ from keras.optimizers import SGD
 from keras.layers.pooling import MaxPooling2D, AveragePooling2D
 import numpy as np
 import code
-import tensorflow as tf
 # Nick and Phil´s Training Details:
 # The network was trained for 100 epochs using stochastic gradient descent
 # with standard 318 parameters: 0.9 momentum, a fixed learning rate of 0.01
@@ -64,12 +63,10 @@ def deepflow():
 	in6c = simpleFactory(in6b, 176, 160)
 	pool = AveragePooling2D(pool_size=(8, 8), strides=None, padding='same', data_format=None)(in6c)
 	flatten = Flatten()(pool)
-	fc = Dense(7, activation=None)(flatten)
+	fc = Dense(4, activation=None)(flatten)
 	softmax = Activation(activation="softmax")(fc)
 	model = Model(inputs=inputs, outputs=softmax)
-	# model.compile(optimizer='rmsprop', loss='binary_crossentropy')
 	model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
 
 	return model
-model = deepflow()

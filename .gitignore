@@ -1,2 +1,6 @@
 *.npy
+*.pkl
+*.ipynb_checkpoints/
 ModelZoo
+./server-script
+./server-script/*
