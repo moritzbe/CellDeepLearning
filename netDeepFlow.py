@@ -45,8 +45,9 @@ def simpleFactory(data, ch_1x1, ch_3x3):
 	concat = concatenate([conv1x1, conv3x3], axis=-1)
 	return concat
 
-def deepflow():
-	inputs = Input(shape=(66, 66, 4)) # 66x66
+def deepflow(channels, n_classes):
+	n_channels = len(channels)
+	inputs = Input(shape=(66, 66, n_channels)) # 66x66
 	conv1 = convFactory(data=inputs, num_filter=96 , kernel=(3,3), pad="same", act_type="relu")
 	in3a = simpleFactory(conv1, 32, 32)
 	in3b = simpleFactory(in3a, 32, 48)
@@ -63,10 +64,9 @@ def deepflow():
 	in6c = simpleFactory(in6b, 176, 160)
 	pool = AveragePooling2D(pool_size=(8, 8), strides=None, padding='same', data_format=None)(in6c)
 	flatten = Flatten()(pool)
-	fc = Dense(4, activation=None)(flatten)
+	fc = Dense(n_classes, activation=None)(flatten)
 	softmax = Activation(activation="softmax")(fc)
 	model = Model(inputs=inputs, outputs=softmax)
-	model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
-
-
+	optimizer = SGD(lr=0.01, momentum=0.9, decay=0, nesterov=False)
+	model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 	return model
