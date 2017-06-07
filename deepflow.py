@@ -21,6 +21,7 @@ nb_epoch = 5
 num_folds = 3 # Cross validation
 random_state = 17
 
+
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in gpu])
 
 def loadnumpy(filename):
@@ -112,7 +113,7 @@ def run_cross_validation_create_models(nfolds, X_train, X_test, y_train):
     accuracies = 0
     models = []
     for train_index, test_index in kf:
-        model = deepflow()
+        model = deepflow(channels, n_classes, lr, momentum, decay):
         X_train = train_data[train_index]
         Y_train = train_target[train_index]
         X_valid = train_data[test_index]
