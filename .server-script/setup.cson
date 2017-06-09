@@ -4,7 +4,7 @@
 
 server:
   location: 'icb-gpusrv01'
-  projectRoot: '/home/moritz_berthold/dl/DeepLearningPipeline/'
+  projectRoot: '/home/moritz_berthold/DeepLearningPipeline/'
 # login info is kept in secrets.cson
 
 options:

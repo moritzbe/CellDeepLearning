@@ -8,6 +8,8 @@ from sklearn.metrics import accuracy_score
 from sklearn.cross_validation import KFold
 from keras.optimizers import SGD
 from keras.callbacks import EarlyStopping
+from keras.callbacks import ModelCheckpoint
+from keras.callbacks import CSVLogger
 from keras.models import load_model
 from sklearn.metrics import log_loss
 from keras.callbacks import LearningRateScheduler
@@ -21,18 +23,18 @@ server = True
 train = True
 data_normalization = False
 gpu = [0]
-batch_size = 32
-epochs = 1
+batch_size = 64
+epochs = 85
 random_state = 17
 channels = [0,1,2,3]
 n_classes = 4
-split = 0.8
+split = 0.9
 # predict_classes = [0,1,2,3]
 
 ### Optimizer ###
 lr = 0.01
 momentum = 0.9
-decay = 0
+decay = 0.0005
 
 modelpath = ""
 
@@ -40,8 +42,8 @@ os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in gpu])
 np.random.seed(seed=random_state)
 
 def loadnumpy(filename):
-	array = np.load(filename)
-	return array
+        array = np.load(filename)
+        return array
 
 def naiveReshape(X, target_pixel_size):
     X_out = np.zeros([X.shape[0], target_pixel_size, target_pixel_size, X.shape[-1]])
@@ -58,17 +60,18 @@ def get_validation_predictions(train_data, predictions_valid):
 
 def split_train_test(X_train, y_train, split):
     split_idx = int(round(y_train.shape[0]*split))
-    indices = np.arange(0, y_train.shape[0])
-    np.random.shuffle(indices)
-    training, test = indices[:split_idx], indices[split_idx:]
-    return X_train[training,:,:,:], y_train[training], X_train[test,:,:,:], y_train[test]
+    # indices = np.arange(0, y_train.shape[0])
+    # np.random.shuffle(indices)
+    # training, test = indices[:split_idx], indices[split_idx:]
+    # return X_train[training,:,:,:], y_train[training], X_train[test,:,:,:], y_train[test]
+	return X_train[:split_idx,:,:,:], y_train[:split_idx], X_train[split_idx:,:,:,:], y_train[split_idx:]
 
-# def lr_scheduler(epoch):
-#     if epoch == 85:
-#         K.set_value(opt.lr, 0.001)
-#         # K.set_value(self.model.optimizer.decay, 0.0005)
-#     return K.get_value(opt.lr)
-
+def schedule(epoch):
+    if epoch == change_epoch:
+        K.set_value(model.optimizer.lr, lr2)
+        K.set_value(model.optimizer.decay, decay2)
+        print("Set new learning rate", K.get_value(model.optimizer.lr))
+    return K.get_value(model.optimizer.lr)
 
 path_to_server_data = "/home/moritz_berthold/cellData"
 
@@ -81,91 +84,105 @@ if not server:
 if server:
     path_train_data = path_to_server_data + "/Ex1/all_channels_66_66_full_no_zeros_in_cells.npy"
     path_train_labels = path_to_server_data + "/Ex1/labels_66_66_full_no_zeros_in_cells.npy"
-    path_test_data = path_to_server_data + "/Ex2/all_channels_66_66_full_no_zeros_in_cells.npy"
-    path_test_labels = path_to_server_data + "/Ex2/labels_66_66_full_no_zeros_in_cells.npy"
+    path_train_data2 = path_to_server_data + "/Ex2/all_channels_66_66_full_no_zeros_in_cells.npy"
+    path_train_labels2 = path_to_server_data + "/Ex2/labels_66_66_full_no_zeros_in_cells.npy"
+	path_test_data = path_to_server_data + "/Ex3/all_channels_66_66_full_no_zeros_in_cells.npy"
+	path_test_labels = path_to_server_data + "/Ex3/labels_66_66_full_no_zeros_in_cells.npy"
 
 
-print("Loading training and test data. Use ex1 for training and tuning and ex2 for testing.")
+print("Loading training and test data. Use ex1 and ex2 for training and tuning and ex3 for testing.")
 X_train_ex1 = np.array(loadnumpy(path_train_data), dtype = np.uint8).astype('float32')
 y_train_ex1 = np.load(path_train_labels)[:,0]
-X_test_ex2 = np.array(loadnumpy(path_test_data), dtype = np.uint8).astype('float32')
-y_test_ex2 = np.load(path_test_labels)[:,0]
+X_train_ex2 = np.array(loadnumpy(path_train_data2), dtype = np.uint8).astype('float32')
+y_train_ex2 = np.load(path_train_labels2)[:,0]
+X_test_ex3 = np.array(loadnumpy(path_test_data), dtype = np.uint8).astype('float32')
+y_test_ex3 = np.load(path_test_labels)[:,0]
 print("done")
 
 # sensible?
 if data_normalization:
     pass
 
-print("Trainingdata shape = ", X_train_ex1.shape)
-print("Traininglabels shape = ", y_train_ex1.shape)
-print("Testdata shape = ", X_test_ex2.shape)
-print("Testlabels shape = ", y_test_ex2.shape)
+print("Ex1 data shape = ", X_train_ex1.shape)
+print("Ex1 labels shape = ", y_train_ex1.shape)
+print("Ex2 data shape = ", X_train_ex2.shape)
+print("Ex2 labels shape = ", y_train_ex2.shape)
+print("Ex3 data shape = ", X_test_ex3.shape)
+print("Ex3 labels shape = ", y_test_ex3.shape)
 
 X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
-X_test_ex2 = X_test_ex2.reshape(X_test_ex2.shape[0], X_test_ex2.shape[3], X_test_ex2.shape[2], X_test_ex2.shape[1])
-X_train_ex1 = naiveReshape(X_train_ex1, target_pixel_size=66)
-X_test_ex2 = naiveReshape(X_test_ex2, target_pixel_size=66)
-X_train, y_train, X_test, y_test = split_train_test(X_train_ex1, y_train_ex1, split=split)
+X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
+X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
+# X_train_ex1 = naiveReshape(X_train_ex1, target_pixel_size=66)
+# X_test_ex2 = naiveReshape(X_test_ex2, target_pixel_size=66)
+print("Combining Ex1 and Ex2 for training:")
+code.interact(local=dict(globals(), **locals()))
+X_train_c = np.concatenate(X_train_ex1, X_train_ex2, axis=0)
+y_train_c = np.concatenate(y_train_ex1, y_train_ex2)
 
+X_train, y_train, X_test, y_test = split_train_test(X_train_c, y_train_c, split=split)
 print("Reshaping done. Use Test, Train and Evaluation Data")
-print(X_train.shape)
-print(X_test.shape)
+print("Shape training data:", X_train.shape)
+print("Shape training evaluation data:", X_test.shape)
 
 X_train = X_train[y_train!=4,:]
 y_train = y_train[y_train!=4]
 X_test = X_test[y_test!=4,:]
 y_test = y_test[y_test!=4]
-X_train_ex1 = X_train_ex1[y_train_ex1!=4,:]
-y_train_ex1 = y_train_ex1[y_train_ex1!=4]
-X_test_ex2 = X_test_ex2[y_test_ex2!=4,:]
-y_test_ex2 = y_test_ex2[y_test_ex2!=4]
+X_test_ex3 = X_test_ex3[y_test_ex3!=4,:]
+y_test_ex3 = y_test_ex3[y_test_ex3!=4]
 print("- removed the last class for comparison with cell profiler")
 print("Selecting channels:", channels)
 X_train = X_train[:,:,:,channels]
 X_test = X_test[:,:,:,channels]
-X_train_ex1 = X_train_ex1[:,:,:,channels]
-X_test_ex2 = X_test_ex2[:,:,:,channels]
+X_test_ex3 = X_test_ex3[:,:,:,channels]
 
+path = "/home/moritz_berthold/dl/cellmodels/deepflow/090617/"
 
 #### TRAINING ####
 if train:
     model = deepflow(channels, n_classes, lr, momentum, decay)
-    # change_lr = LearningRateScheduler(lr_scheduler)
-    # change_decay = DecayRateScheduler(decay_scheduler)
-
+    change_lr = LearningRateScheduler(schedule)
+    csvlog = CSVLogger(path+'_train_log.csv', append=True)
+    checkpoint = ModelCheckpoint(path+'checkpoints/'+ 'checkpoint.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
     callbacks = [
-        EarlyStopping(monitor='val_loss', patience=8, verbose=0),
-        # change_lr,
-        # change_decay,
+        change_lr,
+        csvlog,
+        checkpoint,
     ]
     model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, shuffle=True, verbose=2, validation_data=(X_test, y_test), callbacks=callbacks)
 
-
-
-
-#### EVALUATION EX1 ####
 if not train:
-	print("Loading trained model", modelpath)
-	model = load_model(modelpath)
-predictions_valid = model.predict(X_train_ex1.astype('float32'), batch_size=batch_size, verbose=2)
-log_loss_train = log_loss(y_train_ex1, predictions_valid)
-print('Score log_loss ex1: ', log_loss_train)
-acc_train = model.evaluate(X_train_ex1.astype('float32'), y_train_ex1, verbose=0)
-print("Score accuracy ex1: %.2f%%" % (acc_train[1]*100))
-#### EVALUATION EX2 ####
-predictions_valid = model.predict(X_test_ex2.astype('float32'), batch_size=batch_size, verbose=2)
-log_loss_test = log_loss(y_test_ex2, predictions_valid)
-print('Score log_loss ex2: ', log_loss_test)
-acc_test = model.evaluate(X_test_ex2.astype('float32'), y_test_ex2, verbose=0)
-print("Score accuracy ex2: %.2f%%" % (acc_test[1]*100))
+    print("Loading trained model", modelpath)
+    model = load_model(modelpath)
+
+#### EVALUATION EX1 + Ex2 ####
+predictions_valid = model.predict(X_train.astype('float32'), batch_size=batch_size, verbose=2)
+log_loss_train = log_loss(y_train, predictions_valid)
+print('Score log_loss train: ', log_loss_train)
+acc_train = model.evaluate(X_train.astype('float32'), y_train, verbose=0)
+print("Score accuracy train: %.2f%%" % (acc_train[1]*100))
+
+#### EVALUATION EX3 ####
+predictions_valid_test = model.predict(X_train_ex3.astype('float32'), batch_size=batch_size, verbose=2)
+log_loss_test = log_loss(y_test_ex3, predictions_valid_test)
+print('Score log_loss test: ', log_loss_test)
+acc_test = model.evaluate(X_test_ex3.astype('float32'), y_test_ex3, verbose=0)
+print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
 
 
-if train:
-	modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/trained_on_ex1_ch_" + str(channels) + "_bs=" + str(batch_size) + \
-		"_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_split=" + str(split) + "_lr=" + str(lr)  + \
-		"_momentum=" + str(momentum)  + "_decay=" + str(decay) + "_acc1=" + str(acc_train) + "_acc2=" + str(acc_test) +".h5"
-	model.save(modelname)
-	print("saved model")
 
+#### Saving Model ####
+if train & modelsave:
+    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/ch_" + str(channels) + "_bs=" + str(batch_size) + \
+            "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
+            "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
+            "_change_epoch=" + str(change_epoch) + "_decay2=" + str(decay2) + \
+            "_lr2=" + str(lr2)  + "_acc1=" + str(acc_train) + "_acc2=" + str(acc_test) + ".h5"
+    model.save(modelname)
+    print("saved model")
+
+# predictions_valid_2 = model.predict(X_test_2.astype('float32'), batch_size=batch_size, verbose=2)
+# plotNiceConfusionMatrix(np.argmax(predictions_valid_2, axis=1), y_test_2, class_names, rel=False)
 
 code.interact(local=dict(globals(), **locals()))
