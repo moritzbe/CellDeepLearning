@@ -26,7 +26,7 @@ gpu = [2]
 batch_size = 32
 epochs = 100
 random_state = 17
-channels = [0,1]
+channels = [0]
 n_classes = 2
 split = 0.9
 
@@ -154,8 +154,8 @@ path = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/"
 if train:
     model = deepflow(channels, n_classes, lr, momentum, decay)
     change_lr = LearningRateScheduler(schedule)
-    csvlog = CSVLogger(path+'new_r2b_train_log.csv', append=True)
-    checkpoint = ModelCheckpoint(path+'checkpoints/'+ 'r2b_checkpoint.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+    csvlog = CSVLogger(path+'new_r2b_only_PGP_train_log.csv', append=True)
+    checkpoint = ModelCheckpoint(path+'checkpoints/'+ 'PGP_only_r2b_checkpoint.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
     callbacks = [
         change_lr,
         csvlog,

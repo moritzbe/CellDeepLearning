@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-path = "~/dl/cellmodels/blasi/120617/_train_log.csv"
+# path = "~/dl/cellmodels/blasi/120617/_train_log.csv"
+path = "~/dl/cellmodels/deepflow/120617/_train_log.csv"
+
 tb = pd.read_table(path, delimiter=",")
 
 loss = tb["loss"]
