@@ -22,14 +22,13 @@ import os
 server = True
 train = True
 data_normalization = False
-gpu = [0]
+gpu = [2]
 batch_size = 32
 epochs = 100
 random_state = 17
 channels = [0,1]
-n_classes = 4
+n_classes = 2
 split = 0.9
-class_names = ["CGRP+ RIIb+", "CGRP+ RIIb-", "CGRP- RIIb+", "CGRP- RIIb-"]
 
 ### Optimizer ###
 lr = 0.01
@@ -38,6 +37,20 @@ decay = 0
 change_epoch = 85
 lr2 = 0.001
 decay2 = 0.0005
+
+class_names = ["RIIb+", "RIIb-"]
+
+def convertLabels(ground_truth):
+    ground_truth[np.argwhere(ground_truth==0)] = 0 # +ve
+    ground_truth[np.argwhere(ground_truth==2)] = 0 # +ve
+    ground_truth[np.argwhere(ground_truth==1)] = 1 # -ve
+    ground_truth[np.argwhere(ground_truth==3)] = 1 # -ve
+    return ground_truth
+
+### Optimizer ###
+lr = 0.01
+momentum = 0.9
+decay = 0.0005
 
 modelpath = ""
 
@@ -74,11 +87,11 @@ def schedule(epoch):
 
 path_to_server_data = "/home/moritz_berthold/cellData"
 
-# if not server:
-#     path_train_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_66_66_full_no_zeros_in_cells.npy"
-#     path_train_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/labels_66_66_full_no_zeros_in_cells.npy"
-#     path_test_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/all_channels_66_66_full_no_zeros_in_cells.npy"
-#     path_test_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/labels_66_66_full_no_zeros_in_cells.npy"
+if not server:
+    path_train_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_66_66_full_no_zeros_in_cells.npy"
+    path_train_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/labels_66_66_full_no_zeros_in_cells.npy"
+    path_test_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/all_channels_66_66_full_no_zeros_in_cells.npy"
+    path_test_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/labels_66_66_full_no_zeros_in_cells.npy"
 
 if server:
     path_train_data = path_to_server_data + "/Ex1/all_channels_66_66_full_no_zeros_in_cells.npy"
@@ -91,15 +104,12 @@ if server:
 
 print("Loading training and test data. Use ex1 and ex2 for training and tuning and ex3 for testing.")
 X_train_ex1 = np.array(loadnumpy(path_train_data), dtype = np.uint8).astype('float32')
-y_train_ex1 = np.load(path_train_labels)[:,0]
+y_train_ex1 = convertLabels(np.load(path_train_labels)[:,0])
 X_train_ex2 = np.array(loadnumpy(path_train_data2), dtype = np.uint8).astype('float32')
-y_train_ex2 = np.load(path_train_labels2)[:,0]
+y_train_ex2 = convertLabels(np.load(path_train_labels2)[:,0])
 # X_test_ex3 = np.array(loadnumpy(path_test_data), dtype = np.uint8).astype('float32')
-# y_test_ex3 = np.load(path_test_labels)[:,0]
+# y_test_ex3 = convertLabels(np.load(path_test_labels)[:,0])
 print("done")
-
-# code.interact(local=dict(globals(), **locals()))
-
 
 # sensible?
 if data_normalization:
@@ -115,7 +125,6 @@ print("Ex2 labels shape = ", y_train_ex2.shape)
 X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
 X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
 # X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
-
 # X_train_ex1 = naiveReshape(X_train_ex1, target_pixel_size=66)
 # X_test_ex2 = naiveReshape(X_test_ex2, target_pixel_size=66)
 print("Combining Ex1 and Ex2 for training:")
@@ -126,7 +135,6 @@ X_train, y_train, X_test, y_test = split_train_test(X_train_c, y_train_c, split=
 print("Reshaping done. Use Test, Train and Evaluation Data")
 print("Shape training data:", X_train.shape)
 print("Shape training evaluation data:", X_test.shape)
-# code.interact(local=dict(globals(), **locals()))
 
 X_train = X_train[y_train!=4,:]
 y_train = y_train[y_train!=4]
@@ -146,8 +154,8 @@ path = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/"
 if train:
     model = deepflow(channels, n_classes, lr, momentum, decay)
     change_lr = LearningRateScheduler(schedule)
-    csvlog = CSVLogger(path+'_train_log.csv', append=True)
-    checkpoint = ModelCheckpoint(path+'checkpoints/'+ 'checkpoint.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+    csvlog = CSVLogger(path+'new_r2b_train_log.csv', append=True)
+    checkpoint = ModelCheckpoint(path+'checkpoints/'+ 'r2b_checkpoint.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
     callbacks = [
         change_lr,
         csvlog,
@@ -165,8 +173,8 @@ log_loss_train = log_loss(y_train, predictions_valid)
 print('Score log_loss train: ', log_loss_train)
 acc_train = model.evaluate(X_train.astype('float32'), y_train, verbose=0)
 print("Score accuracy train: %.2f%%" % (acc_train[1]*100))
-code.interact(local=dict(globals(), **locals()))
 
+code.interact(local=dict(globals(), **locals()))
 #### EVALUATION EX3 ####
 # predictions_valid_test = model.predict(X_train_ex3.astype('float32'), batch_size=batch_size, verbose=2)
 # log_loss_test = log_loss(y_test_ex3, predictions_valid_test)
@@ -178,7 +186,7 @@ code.interact(local=dict(globals(), **locals()))
 
 #### Saving Model ####
 if train & modelsave:
-    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/better_model_ch_" + str(channels) + "_bs=" + str(batch_size) + \
+    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/r2b+-_prediction_ch_" + str(channels) + "_bs=" + str(batch_size) + \
             "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
             "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
             "_change_epoch=" + str(change_epoch) + "_decay2=" + str(decay2) + \

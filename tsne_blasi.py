@@ -27,6 +27,7 @@ server = True
 train = False
 modelsave = False
 data_normalization = False
+eval_model = False
 gpu = [1]
 batch_size = 32
 epochs = 100
@@ -47,8 +48,12 @@ decay2 = 0.0005
 
 # modelpath = "/home/moritz_berthold/dl/cellmodels/blasi/ch_[0, 1]_bs=32_epochs=100_norm=False_split=0.8_lr1=0.01_momentum=0.9_decay1=0_change_epoch=85_decay2=0.0005_lr2=0.001_acc1=[0.30349450050783999, 0.95775739168164631]_acc2=[1.5066425106198122, 0.78772854049544905].h5"
 modelpath = "/home/moritz_berthold/dl/cellmodels/blasi/120617/checkpoints/checkpoint.hdf5"
+
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in gpu])
 np.random.seed(seed=random_state)
+
+# code.interact(local=dict(globals(), **locals()))
+
 
 def loadnumpy(filename):
         array = np.load(filename)
@@ -84,7 +89,7 @@ def schedule(epoch):
 def show_cell_image(X, y, fnames):
     plt.imshow(X[-1,:,:,1])
     plt.show()
-    # code.interact(local=dict(globals(), **locals()))
+    code.interact(local=dict(globals(), **locals()))
 
 if server:
     h5f = h5py.File('/home/moritz_berthold/blasiData/X_blasi_original.h5', 'r')
@@ -110,16 +115,23 @@ y_test = y_test_temp[:int(round(X_test_temp.shape[0]/2))]
 X_test_2 = X_test_temp[int(round(X_test_temp.shape[0]/2)):,:,:,:]
 y_test_2 = y_test_temp[int(round(X_test_temp.shape[0]/2)):]
 
+# code.interact(local=dict(globals(), **locals()))
+# small = np.load("small_model_activations.npy")
+# large = np.load("large_model.npy")
+
+
+
 print("Reshaping done. Use Test, Train and Evaluation Data")
 print(X_train.shape)
 print(X_test.shape)
+# code.interact(local=dict(globals(), **locals()))
 
 # sensible?
 if data_normalization:
     pass
 
 
-path = "/home/moritz_berthold/dl/cellmodels/blasi/120617/"
+path = "/home/moritz_berthold/dl/cellmodels/blasi/080617/"
 
 #### TRAINING ####
 if train:
@@ -139,19 +151,20 @@ if not train:
     print("Loading trained model", modelpath)
     model = load_model(modelpath)
 
-predictions_valid = model.predict(X_train_ex1.astype('float32'), batch_size=batch_size, verbose=2)
-log_loss_train = log_loss(y_train_ex1, predictions_valid)
-print('Score log_loss train: ', log_loss_train)
-acc_train = model.evaluate(X_train_ex1.astype('float32'), y_train_ex1, verbose=0)
-print("Score accuracy train: %.2f%%" % (acc_train[1]*100))
-acc_test = model.evaluate(X_test_2.astype('float32'), y_test_2, verbose=0)
-print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
+if eval_model:
+    predictions_valid = model.predict(X_train_ex1.astype('float32'), batch_size=batch_size, verbose=2)
+    log_loss_train = log_loss(y_train_ex1, predictions_valid)
+    print('Score log_loss train: ', log_loss_train)
+    acc_train = model.evaluate(X_train_ex1.astype('float32'), y_train_ex1, verbose=0)
+    print("Score accuracy train: %.2f%%" % (acc_train[1]*100))
+    acc_test = model.evaluate(X_test_2.astype('float32'), y_test_2, verbose=0)
+    print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
 
 
 
 #### Saving Model ####
 if train & modelsave:
-    modelname = "/home/moritz_berthold/dl/cellmodels/blasi/better_model_ch_" + str(channels) + "_bs=" + str(batch_size) + \
+    modelname = "/home/moritz_berthold/dl/cellmodels/blasi/ch_" + str(channels) + "_bs=" + str(batch_size) + \
             "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
             "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
             "_change_epoch=" + str(change_epoch) + "_decay2=" + str(decay2) + \
@@ -176,18 +189,28 @@ def reduceClasses(labels):
             out[i] = 4
     return out
 
+def lastLayerActivationExtractor(model):
+    activations = Model(inputs=model.input, outputs=model.get_layer(name='last-layer-activations').output)
+    return(activations)
+
 predictions_valid_2 = model.predict(X_test_2.astype('float32'), batch_size=batch_size, verbose=2)
 predictions_valid_2 = np.argmax(predictions_valid_2, axis=1)
 
+# class_names = ["1","2","3","4","5","6","7"]
+# class_names2 = ["G1,G2,S","Pro","Meta","Ana","Telo"]
 
-
-class_names = ["1","2","3","4","5","6","7"]
-class_names2 = ["G1,G2,S","Pro","Meta","Ana","Telo"]
 y_test_2_reduced = reduceClasses(y_test_2)
 predictions_valid_2_reduced = reduceClasses(predictions_valid_2)
 
 # plotNiceConfusionMatrix(predictions_valid_2, y_test_2, class_names, rel=False)
 # plotNiceConfusionMatrix(predictions_valid_2_reduced, y_test_2_reduced, class_names2, rel=False)
 # plotNiceConfusionMatrix(y_test_2_reduced, predictions_valid_2_reduced, class_names2, rel=False)
-print("Reduced classes test accuracy is: ", accuracy(y_test_2_reduced, predictions_valid_2_reduced))
+# print("Reduced classes test accuracy is: ", accuracy(y_test_2_reduced, predictions_valid_2_reduced))
+
+#### TSNE ####
+red_model = Model(inputs=model.input, outputs=model.layers[-2].output)
+activations = red_model.predict(X_test_2)
+# Currently 1344, should be 336
+d_activations = tsne(activations, no_dims = 2, initial_dims = 50, perplexity = 30.0)
+plot2d(d_activations, y_test_2_reduced, "tSNE last layer activations, reduced")
 code.interact(local=dict(globals(), **locals()))

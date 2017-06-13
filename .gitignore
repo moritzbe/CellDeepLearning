@@ -1,4 +1,5 @@
 *.npy
+*.png
 *.pkl
 *.ipynb_checkpoints/
 ModelZoo

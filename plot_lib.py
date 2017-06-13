@@ -24,14 +24,14 @@ def plot2d(X, y, title):
 	ax.set_xlabel("n1",fontsize=12)
 	ax.set_ylabel("n2",fontsize=12)
 	ax.grid(True,linestyle='-',color='0.75')
-	colors = ['r','g','b','black','white','c','m','y','#CCB974','#77BEDB']
+	colors = ['r','g','b','black','c','m','y','#CCB974','#77BEDB']
 
 	for i in np.unique(y):
 		ax.scatter(X[np.where([y==i])[1], 0], X[np.where([y==i])[1], 1], c=colors[i-1], marker='o')
 
 	ax.set_xlabel('n1')
 	ax.set_ylabel('n2')
-	
+
 	plt.show()
 
 def plotImage(X, entry, label = None):
@@ -49,4 +49,3 @@ def plotHistogram(x, bins, xlabel, ylabel, title):
 	# plt.axis([xmin, xmax, ymin, ymax])
 	plt.grid(True)
 	plt.show()
-	
