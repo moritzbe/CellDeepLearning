@@ -17,22 +17,24 @@ def plot3d(X,y,title):
 		ax.scatter(X[np.where([y==i])[1], 0], X[np.where([y==i])[1], 1], X[np.where([y==i])[1], 2], c=colors[i], marker='o')
 	plt.show()
 
-def plot2d(X, y, title):
+def plot2d(X, y, class_names, title):
 	fig = plt.figure(figsize=(6,6))
 	fig.suptitle(title, fontsize=20)
 	ax = fig.add_subplot(111)
 	ax.set_xlabel("n1",fontsize=12)
 	ax.set_ylabel("n2",fontsize=12)
 	ax.grid(True,linestyle='-',color='0.75')
-	colors = ['r','g','b','black','c','m','y','#CCB974','#77BEDB']
-
+	t = np.arange(100)
+	# , cmap="GnBu"
 	for i in np.unique(y):
-		ax.scatter(X[np.where([y==i])[1], 0], X[np.where([y==i])[1], 1], c=colors[i-1], marker='o')
-
+		c=plt.cm.Dark2(y+1)
+		ax.scatter(X[np.where([y==i])[1], 0], X[np.where([y==i])[1], 1], c=plt.cm.Dark2(i+1), marker='o', label=class_names[i], alpha=0.5)
 	ax.set_xlabel('n1')
 	ax.set_ylabel('n2')
-
+	plt.legend(loc="upper right")
 	plt.show()
+
+
 
 def plotImage(X, entry, label = None):
 	img = X[entry,:].reshape((28, 28))

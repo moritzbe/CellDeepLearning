@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
+import code
 # path = "~/dl/cellmodels/blasi/120617/_train_log.csv"
-path = "~/dl/cellmodels/deepflow/120617/_train_log.csv"
+path = "~/dl/cellmodels/deepflow/120617/new_r2b_only_PGP_train_log.csv"
 
 tb = pd.read_table(path, delimiter=",")
 
@@ -12,6 +12,7 @@ val_loss = tb["val_loss"]
 acc = tb["acc"]
 val_acc = tb["val_acc"]
 
+code.interact(local=dict(globals(), **locals()))
 
 plt.plot(loss,c='r',alpha=0.5, linewidth=3)
 plt.plot(val_loss,c='blue',alpha=0.5, linewidth=3)

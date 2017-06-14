@@ -28,7 +28,7 @@ train = False
 modelsave = False
 data_normalization = False
 eval_model = False
-gpu = [1]
+gpu = [0]
 batch_size = 32
 epochs = 100
 random_state = 17
@@ -196,7 +196,7 @@ def lastLayerActivationExtractor(model):
 predictions_valid_2 = model.predict(X_test_2.astype('float32'), batch_size=batch_size, verbose=2)
 predictions_valid_2 = np.argmax(predictions_valid_2, axis=1)
 
-# class_names = ["1","2","3","4","5","6","7"]
+class_names = ["Ana","G1","G2","Meta","Pro","S","Telo"]
 # class_names2 = ["G1,G2,S","Pro","Meta","Ana","Telo"]
 
 y_test_2_reduced = reduceClasses(y_test_2)
@@ -212,5 +212,5 @@ red_model = Model(inputs=model.input, outputs=model.layers[-2].output)
 activations = red_model.predict(X_test_2)
 # Currently 1344, should be 336
 d_activations = tsne(activations, no_dims = 2, initial_dims = 50, perplexity = 30.0)
-plot2d(d_activations, y_test_2_reduced, "tSNE last layer activations, reduced")
 code.interact(local=dict(globals(), **locals()))
+plot2d(d_activations, y_test_2, class_names, "tSNE last layer activations")

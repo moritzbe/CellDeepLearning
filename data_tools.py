@@ -70,6 +70,41 @@ def conf_M(cm, classes, normalize=False, title='Confusion matrix', cmap=plt.cm.B
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
 
+def round_keep_sum(cm, decimals=2):
+	rcm = np.round(cm, decimals)
+	for i in range(rcm.shape[0]):
+		column = rcm[i,:]
+		error = 1 - np.sum(column)
+		sr = 10**(-decimals)
+		n = int(round(error / sr))
+		for _,j in sorted(((cm[i,j] - rcm[i,j], j) for j in range(cm.shape[1])), reverse=n>0)[:abs(n)]:
+			rcm[i,j] += math.copysign(0.01, n)
+	return rcm
+
+def conf_M2(cm, classes, title='Confusion matrix', cmap=plt.cm.Blues):
+	plt.imshow(cm, interpolation='nearest', cmap=cmap)
+	plt.colorbar()
+	tick_marks = np.arange(len(classes))
+	plt.xticks(tick_marks, classes, rotation=45)
+	plt.yticks(tick_marks, classes)
+	# code.interact(local=dict(globals(), **locals()))
+	rel_cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+	rel_cm = round_keep_sum(rel_cm, decimals=2)
+	thresh = cm.max() / 2.
+	print("absolute CM")
+	print(cm)
+	print("relative CM")
+	print(rel_cm)
+
+	plt.title("Absolute and Normalized confusion matrix")
+	for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+		plt.text(j, i, str(cm[i, j]) + "\n" + str(round(rel_cm[i, j], 3)*100) + "%.", horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
+	plt.title("Absolute and relative confusion matrix")
+
+	plt.tight_layout()
+	plt.ylabel('True label')
+	plt.xlabel('Predicted label')
+
 def plotNiceConfusionMatrix(y_test, y_pred, class_names):
 	# Compute confusion matrix
 	cnf_matrix = confusion_matrix(y_test, y_pred)
@@ -82,6 +117,15 @@ def plotNiceConfusionMatrix(y_test, y_pred, class_names):
 
 	plt.show()
 
+def plotBothConfusionMatrices(y_test, y_pred, class_names):
+	# Compute confusion matrix
+	cnf_matrix = confusion_matrix(y_test, y_pred)
+	# Plot non-normalized confusion matrix
+	fig = plt.figure()
+	conf_M2(cnf_matrix, classes=class_names, title='Confusion matrix')
+	fig.set_tight_layout(True)
+	plt.show()
+
 def accuracy(y_test, pred):
 	rights = 0
 	for i in range(len(y_test)):
@@ -89,25 +133,6 @@ def accuracy(y_test, pred):
 			rights += 1
 	accuracy = float(rights) / float(len(y_test))
 	return round(accuracy, 4)*100
-
-# def readLMDB(db_path):
-# 	env = lmdb.open(db_path, readonly=True)
-# 	with env.begin() as txn:
-# 	    raw_datum = txn.get(b'00000000')
-
-# 	datum = caffe.proto.caffe_pb2.Datum()
-# 	datum.ParseFromString(raw_datum)
-
-# 	flat_x = np.fromstring(datum.data, dtype=np.uint8)
-# 	print flat_x.shape
-# 	X = flat_x.reshape(datum.channels, datum.height, datum.width)
-# 	# y = datum.label
-
-	# with env.begin() as txn:
-	#     cursor = txn.cursor()
-	#     for key, value in cursor:
-	#         print(key, value)
-
 
 
 import numpy as Math

@@ -20,7 +20,8 @@ import code
 import os
 
 server = True
-train = True
+train = False
+modelsave = False
 data_normalization = False
 gpu = [2]
 batch_size = 32
@@ -52,7 +53,7 @@ lr = 0.01
 momentum = 0.9
 decay = 0.0005
 
-modelpath = ""
+modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/140617r2b+-_prediction_ch_[0]_bs=32_epochs=100_norm=False_split=0.9_lr1=0.01_momentum=0.9_decay1=0.0005_change_epoch=85_decay2=0.0005_lr2=0.001_acc1=[2.0498867458626939e-05, 1.0]_acc2=[0.30993385431939385, 0.94195119090921142].h5"
 
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in gpu])
 np.random.seed(seed=random_state)
@@ -107,8 +108,8 @@ X_train_ex1 = np.array(loadnumpy(path_train_data), dtype = np.uint8).astype('flo
 y_train_ex1 = convertLabels(np.load(path_train_labels)[:,0])
 X_train_ex2 = np.array(loadnumpy(path_train_data2), dtype = np.uint8).astype('float32')
 y_train_ex2 = convertLabels(np.load(path_train_labels2)[:,0])
-# X_test_ex3 = np.array(loadnumpy(path_test_data), dtype = np.uint8).astype('float32')
-# y_test_ex3 = convertLabels(np.load(path_test_labels)[:,0])
+X_test_ex3 = np.array(loadnumpy(path_test_data), dtype = np.uint8).astype('float32')
+y_test_ex3 = convertLabels(np.load(path_test_labels)[:,0])
 print("done")
 
 # sensible?
@@ -119,12 +120,12 @@ print("Ex1 data shape = ", X_train_ex1.shape)
 print("Ex1 labels shape = ", y_train_ex1.shape)
 print("Ex2 data shape = ", X_train_ex2.shape)
 print("Ex2 labels shape = ", y_train_ex2.shape)
-# print("Ex3 data shape = ", X_test_ex3.shape)
-# print("Ex3 labels shape = ", y_test_ex3.shape)
+print("Ex3 data shape = ", X_test_ex3.shape)
+print("Ex3 labels shape = ", y_test_ex3.shape)
 
 X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
 X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
-# X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
+X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
 # X_train_ex1 = naiveReshape(X_train_ex1, target_pixel_size=66)
 # X_test_ex2 = naiveReshape(X_test_ex2, target_pixel_size=66)
 print("Combining Ex1 and Ex2 for training:")
@@ -140,13 +141,13 @@ X_train = X_train[y_train!=4,:]
 y_train = y_train[y_train!=4]
 X_test = X_test[y_test!=4,:]
 y_test = y_test[y_test!=4]
-# X_test_ex3 = X_test_ex3[y_test_ex3!=4,:]
-# y_test_ex3 = y_test_ex3[y_test_ex3!=4]
+X_test_ex3 = X_test_ex3[y_test_ex3!=4,:]
+y_test_ex3 = y_test_ex3[y_test_ex3!=4]
 print("- removed the last class for comparison with cell profiler")
 print("Selecting channels:", channels)
 X_train = X_train[:,:,:,channels]
 X_test = X_test[:,:,:,channels]
-# X_test_ex3 = X_test_ex3[:,:,:,channels]
+X_test_ex3 = X_test_ex3[:,:,:,channels]
 
 path = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/"
 
@@ -174,19 +175,18 @@ print('Score log_loss train: ', log_loss_train)
 acc_train = model.evaluate(X_train.astype('float32'), y_train, verbose=0)
 print("Score accuracy train: %.2f%%" % (acc_train[1]*100))
 
-code.interact(local=dict(globals(), **locals()))
 #### EVALUATION EX3 ####
-# predictions_valid_test = model.predict(X_train_ex3.astype('float32'), batch_size=batch_size, verbose=2)
-# log_loss_test = log_loss(y_test_ex3, predictions_valid_test)
-# print('Score log_loss test: ', log_loss_test)
-# acc_test = model.evaluate(X_test_ex3.astype('float32'), y_test_ex3, verbose=0)
-# print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
+predictions_valid_test = model.predict(X_test_ex3.astype('float32'), batch_size=batch_size, verbose=2)
+log_loss_test = log_loss(y_test_ex3, predictions_valid_test)
+print('Score log_loss test: ', log_loss_test)
+acc_test = model.evaluate(X_test_ex3.astype('float32'), y_test_ex3, verbose=0)
+print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
 
 
 
 #### Saving Model ####
 if train & modelsave:
-    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/r2b+-_prediction_ch_" + str(channels) + "_bs=" + str(batch_size) + \
+    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/140617r2b+-_prediction_ch_" + str(channels) + "_bs=" + str(batch_size) + \
             "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
             "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
             "_change_epoch=" + str(change_epoch) + "_decay2=" + str(decay2) + \
@@ -194,5 +194,6 @@ if train & modelsave:
     model.save(modelname)
     print("saved model")
 
-# predictions_valid_2 = model.predict(X_test_2.astype('float32'), batch_size=batch_size, verbose=2)
-# plotNiceConfusionMatrix(np.argmax(predictions_valid_2, axis=1), y_test_2, class_names, rel=False)
+
+plotBothConfusionMatrices(np.argmax(predictions_valid_test, axis=1), y_test_ex3, class_names)
+code.interact(local=dict(globals(), **locals()))
