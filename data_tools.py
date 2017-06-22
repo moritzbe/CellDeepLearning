@@ -1,14 +1,16 @@
 import numpy as np
 from numpy import genfromtxt
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, mean_squared_error
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import itertools
+import math
 # import pandas
 import code
 # import lmdb
 
-
+def rms(y_true, y_pred):
+	return mean_squared_error(y_true, y_pred, sample_weight=None, multioutput='uniform_average')
 
 # This function loads the data into X and y,
 # outputs the feature names, the label dictionary, m and n
@@ -98,9 +100,10 @@ def conf_M2(cm, classes, title='Confusion matrix', cmap=plt.cm.Blues):
 
 	plt.title("Absolute and Normalized confusion matrix")
 	for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-		plt.text(j, i, str(cm[i, j]) + "\n" + str(round(rel_cm[i, j], 3)*100) + "%.", horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
-	plt.title("Absolute and relative confusion matrix")
+		# plt.text(j, i, str(cm[i, j]) + "\n" + str(round(rel_cm[i, j], 3)*100) + "%.", horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
+		plt.text("jo")
 
+	plt.title("Absolute and relative confusion matrix")
 	plt.tight_layout()
 	plt.ylabel('True label')
 	plt.xlabel('Predicted label')

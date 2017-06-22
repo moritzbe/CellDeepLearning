@@ -10,7 +10,7 @@ from keras.layers.pooling import MaxPooling2D, AveragePooling2D
 import numpy as np
 from keras.utils import plot_model
 import code
-# Nick and Phil´s Training Details:
+# Nick and Phils Training Details:
 # The network was trained for 100 epochs using stochastic gradient descent
 # with standard 318 parameters: 0.9 momentum, a fixed learning rate of 0.01
 # up to epoch 85 and of 0.001 319 afterwards as well as a slightly regularizing
@@ -69,6 +69,34 @@ def deepflow(channels, n_classes, lr, momentum, decay):
 	model = Model(inputs=inputs, outputs=softmax)
 	optimizer = SGD(lr=lr, momentum=momentum, decay=decay, nesterov=False)
 	model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+	return model
+
+def deepregression(channels, n_classes, lr, momentum, decay):
+	# model = deepflow([1,2,3,4], 4, .01, .09, .0005)
+	n_channels = len(channels)
+	inputs = Input(shape=(66, 66, n_channels)) # 66x66
+	conv1 = convFactory(data=inputs, num_filter=96 , kernel=(3,3), pad="same", act_type="relu") # same
+	in3a = simpleFactory(conv1, 32, 32)
+	in3b = simpleFactory(in3a, 32, 48)
+	in3c = downsampleFactory(in3b, 80) # 33x33
+	in4a = simpleFactory(in3c, 112, 48)
+	in4b = simpleFactory(in4a, 96, 64)
+	in4c = simpleFactory(in4b, 80, 80)
+	in4d = simpleFactory(in4c, 48, 96)
+	in4e = downsampleFactory(in4d, 96) # 17x17
+	in5a = simpleFactory(in4e, 176, 160)
+	in5b = simpleFactory(in5a, 176, 160)
+	in6a = downsampleFactory(in5b, 96) # 8x8
+	in6b = simpleFactory(in6a, 176, 160)
+	in6c = simpleFactory(in6b, 176, 160)
+	pool = AveragePooling2D(pool_size=(9, 9), strides=None, padding='valid', data_format=None)(in6c) # valid
+	flatten = Flatten()(pool)
+	fc = Dense(n_classes, activation=None, name="last-layer-activations")(flatten) # move up, before fully connected layer!
+	# possible batch normalization
+	softmax = Activation(activation="linear")(fc)
+	model = Model(inputs=inputs, outputs=softmax)
+	optimizer = SGD(lr=lr, momentum=momentum, decay=decay, nesterov=False)
+	model.compile(loss="mse", optimizer="adam")
 	return model
 
 def showModel(model, name): #only works locally showModel(model, name = "pool9")

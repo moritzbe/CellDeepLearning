@@ -23,7 +23,8 @@ server = True
 train = False
 modelsave = False
 data_normalization = False
-gpu = [2]
+data_augmentation = False
+gpu = [1]
 batch_size = 32
 epochs = 100
 random_state = 17
@@ -53,7 +54,8 @@ lr = 0.01
 momentum = 0.9
 decay = 0.0005
 
-modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/140617r2b+-_prediction_ch_[0]_bs=32_epochs=100_norm=False_split=0.9_lr1=0.01_momentum=0.9_decay1=0.0005_change_epoch=85_decay2=0.0005_lr2=0.001_acc1=[2.0498867458626939e-05, 1.0]_acc2=[0.30993385431939385, 0.94195119090921142].h5"
+# modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/140617r2b+-_prediction_ch_[0]_bs=32_epochs=100_norm=False_split=0.9_lr1=0.01_momentum=0.9_decay1=0.0005_change_epoch=85_decay2=0.0005_lr2=0.001_acc1=[2.0498867458626939e-05, 1.0]_acc2=[0.30993385431939385, 0.94195119090921142].h5"
+modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/checkpoints/PGP_only_r2b_checkpoint.hdf5"
 
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in gpu])
 np.random.seed(seed=random_state)
@@ -149,6 +151,15 @@ X_train = X_train[:,:,:,channels]
 X_test = X_test[:,:,:,channels]
 X_test_ex3 = X_test_ex3[:,:,:,channels]
 
+if data_augmentation:
+    print("Data augmentation")
+    X_train_l = X_train[:,:,::-1,:]
+    X_train_u = X_train[:,::-1,:,:]
+    X_train_lu = X_train_u[:,:,::-1,:]
+    X_train = np.vstack([X_train, X_train_l, X_train_u, X_train_lu])
+    y_train = np.append(y_train, np.append(y_train, np.append(y_train, y_train)))
+
+
 path = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/"
 
 #### TRAINING ####
@@ -186,8 +197,8 @@ print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
 
 #### Saving Model ####
 if train & modelsave:
-    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/140617r2b+-_prediction_ch_" + str(channels) + "_bs=" + str(batch_size) + \
-            "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
+    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/140617_augmented_r2b+-_prediction_ch_" + str(channels) + "_bs=" + str(batch_size) + \
+            "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_aug=" + str(data_augmentation) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
             "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
             "_change_epoch=" + str(change_epoch) + "_decay2=" + str(decay2) + \
             "_lr2=" + str(lr2)  + "_acc1=" + str(acc_train) + "_acc2=" + str(acc_test) + ".h5"
@@ -195,5 +206,5 @@ if train & modelsave:
     print("saved model")
 
 
-plotBothConfusionMatrices(np.argmax(predictions_valid_test, axis=1), y_test_ex3, class_names)
 code.interact(local=dict(globals(), **locals()))
+plotBothConfusionMatrices(np.argmax(predictions_valid_test, axis=1), y_test_ex3, class_names)
