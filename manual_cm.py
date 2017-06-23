@@ -28,19 +28,14 @@ def conf_M2(cm, rel_cm, classes, title='Confusion matrix', cmap=plt.cm.Blues):
 
 def plotBothConfusionMatrices():
 	# Compute confusion matrix
-    class_names = ["CGRP+ RIIb+", "CGRP+ RIIb-", "CGRP- RIIb+", "CGRP- RIIb-"]
-    cm = np.array([[ 4159  ,  65  , 705  ,  19],\
-    [   33  ,1115  ,  13  , 231],\
-    [ 1471 ,   40 ,11133  , 299],\
-    [  110  , 940 ,  281, 13478]])
-    rel_cm = np.array([[ 0.84 , 0.01 , 0.14 , 0.01],\
-    [ 0.02 , 0.8  , 0.01 , 0.17],\
-    [ 0.12 , 0.  ,  0.86 , 0.02],\
-    [ 0.01 , 0.06 , 0.02 , 0.91]])
+    # class_names = ["CGRP+ RIIb+", "CGRP+ RIIb-", "CGRP- RIIb+", "CGRP- RIIb-"]
+	class_names = ["RIIb+", "RIIb-"]
+	cm = np.array([[17175  ,  1008  ],[  730  , 15179 ]])
+	rel_cm = np.array([[0.94 , 0.06 ],[ 0.05 , 0.95 ]])
 	# Plot non-normalized confusion matrix
-    fig = plt.figure()
-    conf_M2(cm, rel_cm, classes=class_names, title='Confusion matrix')
-    fig.set_tight_layout(True)
-    plt.show()
+	fig = plt.figure()
+	conf_M2(cm, rel_cm, classes=class_names, title='Confusion matrix')
+	fig.set_tight_layout(True)
+	plt.show()
 
 plotBothConfusionMatrices()

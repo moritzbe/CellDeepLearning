@@ -21,11 +21,11 @@ import code
 import os
 
 server = True
-train = True
-modelsave = True
+train = False
+modelsave = False
 data_normalization = False
-data_augmentation = True
-gpu = [1]
+data_augmentation = False
+gpu = [3]
 batch_size = 32
 epochs = 40
 random_state = 17
@@ -46,7 +46,7 @@ class_names = ["RIIb+", "RIIb-"]
 # class_names = ["CGRP+ RIIb+", "CGRP+ RIIb-", "CGRP- RIIb+", "CGRP- RIIb-"]
 
 
-# modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/140617r2b+-_prediction_ch_[0]_bs=32_epochs=100_norm=False_split=0.9_lr1=0.01_momentum=0.9_decay1=0.0005_change_epoch=85_decay2=0.0005_lr2=0.001_acc1=[2.0498867458626939e-05, 1.0]_acc2=[0.30993385431939385, 0.94195119090921142].h5"
+modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/intensity_prediction_r2b_based_on_ch_[0]_bs=32_epochs=40_norm=False_aug=True_split=0.9_lr1=0.01_momentum=0.9_decay1=0_rms2=179.18797775_rms3=_acc=91.52.h5"
 
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in gpu])
 np.random.seed(seed=random_state)
@@ -118,9 +118,9 @@ y_train_ex2 = y_train_ex2[labels_train_ex2!=4]
 labels_train_ex2 = labels_train_ex2[labels_train_ex2!=4]
 X_test_ex3 = X_test_ex3[labels_test_ex3!=4,:]
 y_test_ex3 = y_test_ex3[labels_test_ex3!=4]
-labels_test_ex3 = labels_test_ex3[labels_test_ex3!=4]
 features_test_ex3 = np.load(path_test_labels)[:,1:]
 features_test_ex3 = features_test_ex3[labels_test_ex3!=4,:]
+labels_test_ex3 = labels_test_ex3[labels_test_ex3!=4]
 print("- removed the last class for comparison with cell profiler")
 
 
@@ -224,6 +224,11 @@ def detectPredictedLabel(y_test, y_pred):
         pass
     return label
 
+features_test_ex3 = features_test_ex3[labels_test_ex3!=4,:]
+labels_test_ex3 = labels_test_ex3[labels_test_ex3!=4]
+
+print("max", np.max(features_test_ex3[-1,:]))
+
 pred_label = np.zeros_like(labels_test_ex3)
 for i in range(predictions_valid_test.shape[0]):
     pred_label[i] = detectPredictedLabel(features_test_ex3[i,:], predictions_valid_test[i])
@@ -235,8 +240,12 @@ def convertLabels(ground_truth):
     ground_truth[np.argwhere(ground_truth==3)] = 1 # -ve
     return ground_truth
 
+# remove y = 4
 labels_test_ex3 = convertLabels(labels_test_ex3)
 pred_label = convertLabels(pred_label)
+code.interact(local=dict(globals(), **locals()))
+print("Uniques in pred_label", np.unique(pred_label))
+print("Uniques in ground_truth", np.unique(labels_test_ex3))
 
 acc = accuracy(labels_test_ex3, pred_label)
 print("Accuracy :", acc)
@@ -249,5 +258,4 @@ if train & modelsave:
     model.save(modelname)
     print("saved model")
 
-code.interact(local=dict(globals(), **locals()))
 plotBothConfusionMatrices(pred_label, labels_test_ex3, class_names)

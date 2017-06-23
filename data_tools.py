@@ -100,8 +100,7 @@ def conf_M2(cm, classes, title='Confusion matrix', cmap=plt.cm.Blues):
 
 	plt.title("Absolute and Normalized confusion matrix")
 	for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-		# plt.text(j, i, str(cm[i, j]) + "\n" + str(round(rel_cm[i, j], 3)*100) + "%.", horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
-		plt.text("jo")
+		plt.text(j, i, str(cm[i, j]) + "\n" + str(round(rel_cm[i, j], 3)*100) + "%.", horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
 
 	plt.title("Absolute and relative confusion matrix")
 	plt.tight_layout()
