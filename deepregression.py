@@ -25,7 +25,7 @@ train = False
 modelsave = False
 data_normalization = False
 data_augmentation = False
-gpu = [3]
+gpu = [0]
 batch_size = 32
 epochs = 40
 random_state = 17
@@ -193,12 +193,44 @@ print('Train Root mean squared error: ', rms2)
 
 #### EVALUATION EX3 ####
 predictions_valid_test = model.predict(X_test_ex3.astype('float32'), batch_size=batch_size, verbose=2)
-rms3 = rms(y_test_ex3, predictions_valid_test)**.5
+predictions_valid_test = predictions_valid_test[:,0]
+
+code.interact(local=dict(globals(), **locals()))
+
+threshold = 1000
+print("Discarding R2b >= ", threshold)
+y_test_ex3_ = y_test_ex3[y_test_ex3 < 1000]
+# code.interact(local=dict(globals(), **locals()))
+predictions_valid_test_ = predictions_valid_test[y_test_ex3 < 1000]
+
+rms3 = rms(y_test_ex3_, predictions_valid_test_)**.5
 print('Test Root mean squared error: ', rms3)
-spearman = spearmanr(y_test_ex3, predictions_valid_test)
+spearman = spearmanr(y_test_ex3_, predictions_valid_test_)[0]
+pearson = pearsonr(y_test_ex3_, predictions_valid_test_)[0]
 print("The Spearman correlation coefficient on exp. 3 is ", spearman)
+print("The Pearson correlation coefficient on exp. 3 is ", pearson[0])
 
 ch_to_predict = "RIIb"
+ch = "RIIb"
+
+plt.scatter(predictions_valid_test, y_test_ex3, marker='.', color='r', s = 2, label="Pearson correlation = " + str(pearson) + \
+" \nSpearman correlation = " + str(spearman) + \
+" \nTest rms (RIIb < 1000)= " + str(rms3))
+plt.xlim([0, 12000])
+plt.ylim([0, 12000])
+plt.ylabel('Prediction')
+plt.xlabel('Ground Truth')
+plt.title("Intensity prediction of channel " + str(ch) + " using Random Forest regression")
+leg = plt.legend(loc="upper right")
+for item in leg.legendHandles:
+    item.set_visible(False)
+
+
+plt.show()
+
+
+
+
 
 def detectPredictedLabel(y_test, y_pred):
     mean1 = y_test[0]
@@ -243,7 +275,6 @@ def convertLabels(ground_truth):
 # remove y = 4
 labels_test_ex3 = convertLabels(labels_test_ex3)
 pred_label = convertLabels(pred_label)
-code.interact(local=dict(globals(), **locals()))
 print("Uniques in pred_label", np.unique(pred_label))
 print("Uniques in ground_truth", np.unique(labels_test_ex3))
 
@@ -258,4 +289,20 @@ if train & modelsave:
     model.save(modelname)
     print("saved model")
 
-plotBothConfusionMatrices(pred_label, labels_test_ex3, class_names)
+
+#Plot Ordered Scatter
+i = np.argsort(y_test_ex3)
+y_test_ex3 = y_test_ex3[i]
+predictions_valid_test = predictions_valid_test[i,0]
+plt.plot(predictions_valid_test,c='r',alpha=0.5)
+plt.plot(y_test_ex3,c='blue',alpha=0.5, linewidth=3)
+plt.xlim([0, len(y_test_ex3)])
+plt.ylim([0, 6000])
+plt.title(str(ch) + " intensity estimate and ground truth ordered by magnitude")
+plt.ylabel('Intensity')
+plt.xlabel('Cells ordered by ground truth intensity magnitude')
+plt.show()
+
+
+code.interact(local=dict(globals(), **locals()))
+# plotBothConfusionMatrices(pred_label, labels_test_ex3, class_names)
