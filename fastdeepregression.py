@@ -20,22 +20,15 @@ import _pickle as cPickle
 import code
 import os
 
-
-# clean model
-modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/intensity_prediction_r2b_nbts_based_on_ch_[0]_bs=32_epochs=45_norm=False_aug=False_split=0.9_lr1=0.01_momentum=0.9_decay1=0_rms2=63.1048360822_rms3=_acc=94.51.h5"
-# dirty model
-# modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/intensity_prediction_r2b_based_on_ch_[0]_bs=32_epochs=40_norm=False_aug=True_split=0.9_lr1=0.01_momentum=0.9_decay1=0_rms2=179.18797775_rms3=_acc=91.52.h5"
 prevent_bleed_through = True
-save_outcomes = True
-save_name = "result_deep_regression_shifted_45_eps_cm_cd" #clean model = cm dirty data = dd
 server = True
-train = False
-modelsave = False
+train = True
+modelsave = True
 data_normalization = False
 data_augmentation = False
 gpu = [3]
 batch_size = 32
-epochs = 40
+epochs = 45
 random_state = 17
 channels = [0]
 n_classes = 1
@@ -54,6 +47,8 @@ class_names = ["RIIb+", "RIIb-"]
 # class_names = ["CGRP+ RIIb+", "CGRP+ RIIb-", "CGRP- RIIb+", "CGRP- RIIb-"]
 
 
+# modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/intensity_prediction_r2b_based_on_ch_[0]_bs=32_epochs=40_norm=False_aug=True_split=0.9_lr1=0.01_momentum=0.9_decay1=0_rms2=179.18797775_rms3=_acc=91.52.h5"
+modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/checkpoints/predict_r2b_intensity_based_on_PGP_no_bleed_trough.hdf5"
 
 
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in gpu])
@@ -100,47 +95,33 @@ if not server:
 if server:
     if prevent_bleed_through:
         print("Prevent Bleed Through")
-        if train:
-            path_train_data = path_to_server_data + "/Ex1/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
-            path_train_labels = path_to_server_data + "/Ex1/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
-            path_train_data2 = path_to_server_data + "/Ex2/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
-            path_train_labels2 = path_to_server_data + "/Ex2/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
-        path_test_data = path_to_server_data + "/Ex3/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
-        path_test_labels = path_to_server_data + "/Ex3/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+        path_train_data = path_to_server_data + "/Ex1/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+        path_train_labels = path_to_server_data + "/Ex1/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+        path_train_data2 = path_to_server_data + "/Ex2/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+        path_train_labels2 = path_to_server_data + "/Ex2/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
     else:
-        if train:
-            path_train_data = path_to_server_data + "/Ex1/all_channels_66_66_full_no_zeros_in_cells.npy"
-            path_train_labels = path_to_server_data + "/Ex1/labels_66_66_full_no_zeros_in_cells.npy"
-            path_train_data2 = path_to_server_data + "/Ex2/all_channels_66_66_full_no_zeros_in_cells.npy"
-            path_train_labels2 = path_to_server_data + "/Ex2/labels_66_66_full_no_zeros_in_cells.npy"
+        path_train_data = path_to_server_data + "/Ex1/all_channels_66_66_full_no_zeros_in_cells.npy"
+        path_train_labels = path_to_server_data + "/Ex1/labels_66_66_full_no_zeros_in_cells.npy"
+        path_train_data2 = path_to_server_data + "/Ex2/all_channels_66_66_full_no_zeros_in_cells.npy"
+        path_train_labels2 = path_to_server_data + "/Ex2/labels_66_66_full_no_zeros_in_cells.npy"
         path_test_data = path_to_server_data + "/Ex3/all_channels_66_66_full_no_zeros_in_cells.npy"
         path_test_labels = path_to_server_data + "/Ex3/labels_66_66_full_no_zeros_in_cells.npy"
 
 print("Loading training and test data. Use ex1 and ex2 for training and tuning and ex3 for testing.")
-if train:
-    X_train_ex1 = np.array(loadnumpy(path_train_data), dtype = np.uint8).astype('float32')
-    y_train_ex1 = np.load(path_train_labels)[:,3]
-    labels_train_ex1 = np.load(path_train_labels)[:,0]
-    X_train_ex2 = np.array(loadnumpy(path_train_data2), dtype = np.uint8).astype('float32')
-    y_train_ex2 = np.load(path_train_labels2)[:,3]
-    labels_train_ex2 = np.load(path_train_labels2)[:,0]
-X_test_ex3 = np.array(loadnumpy(path_test_data), dtype = np.uint8).astype('float32')
-y_test_ex3 = np.load(path_test_labels)[:,3]
-labels_test_ex3 = np.load(path_test_labels)[:,0]
+X_train_ex1 = np.array(loadnumpy(path_train_data), dtype = np.uint8).astype('float32')
+y_train_ex1 = np.load(path_train_labels)[:,3]
+labels_train_ex1 = np.load(path_train_labels)[:,0]
+X_train_ex2 = np.array(loadnumpy(path_train_data2), dtype = np.uint8).astype('float32')
+y_train_ex2 = np.load(path_train_labels2)[:,3]
+labels_train_ex2 = np.load(path_train_labels2)[:,0]
 print("done")
 
-if train:
-    X_train_ex1 = X_train_ex1[labels_train_ex1!=4,:]
-    y_train_ex1 = y_train_ex1[labels_train_ex1!=4]
-    labels_train_ex1 = labels_train_ex1[labels_train_ex1!=4]
-    X_train_ex2 = X_train_ex2[labels_train_ex2!=4,:]
-    y_train_ex2 = y_train_ex2[labels_train_ex2!=4]
-    labels_train_ex2 = labels_train_ex2[labels_train_ex2!=4]
-X_test_ex3 = X_test_ex3[labels_test_ex3!=4,:]
-y_test_ex3 = y_test_ex3[labels_test_ex3!=4]
-features_test_ex3 = np.load(path_test_labels)[:,1:]
-features_test_ex3 = features_test_ex3[labels_test_ex3!=4,:]
-labels_test_ex3 = labels_test_ex3[labels_test_ex3!=4]
+X_train_ex1 = X_train_ex1[labels_train_ex1!=4,:]
+y_train_ex1 = y_train_ex1[labels_train_ex1!=4]
+labels_train_ex1 = labels_train_ex1[labels_train_ex1!=4]
+X_train_ex2 = X_train_ex2[labels_train_ex2!=4,:]
+y_train_ex2 = y_train_ex2[labels_train_ex2!=4]
+labels_train_ex2 = labels_train_ex2[labels_train_ex2!=4]
 print("- removed the last class for comparison with cell profiler")
 
 
@@ -149,31 +130,28 @@ print("- removed the last class for comparison with cell profiler")
 # sensible?
 if data_normalization:
     pass
-if train:
-    print("Ex1 data shape = ", X_train_ex1.shape)
-    print("Ex1 labels shape = ", y_train_ex1.shape)
-    print("Ex2 data shape = ", X_train_ex2.shape)
-    print("Ex2 labels shape = ", y_train_ex2.shape)
-print("Ex3 data shape = ", X_test_ex3.shape)
-print("Ex3 labels shape = ", y_test_ex3.shape)
 
-if train:
-    X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
-    X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
-    print("Combining Ex1 and Ex2 for training:")
-    X_train_c = np.vstack([X_train_ex1, X_train_ex2])
-    y_train_c = np.append(y_train_ex1, y_train_ex2)
-    X_train, y_train, X_test, y_test = split_train_test(X_train_c, y_train_c, split=split)
-    print("Reshaping done. Use Test, Train and Evaluation Data")
-    print("Shape training data:", X_train.shape)
-    print("Shape training evaluation data:", X_test.shape)
+print("Ex1 data shape = ", X_train_ex1.shape)
+print("Ex1 labels shape = ", y_train_ex1.shape)
+print("Ex2 data shape = ", X_train_ex2.shape)
+print("Ex2 labels shape = ", y_train_ex2.shape)
 
-    print("Selecting channels:", channels)
-    X_train = X_train[:,:,:,channels]
-    X_test = X_test[:,:,:,channels]
 
-X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
-X_test_ex3 = X_test_ex3[:,:,:,channels]
+X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
+X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
+
+print("Combining Ex1 and Ex2 for training:")
+X_train_c = np.vstack([X_train_ex1, X_train_ex2])
+y_train_c = np.append(y_train_ex1, y_train_ex2)
+
+X_train, y_train, X_test, y_test = split_train_test(X_train_c, y_train_c, split=split)
+print("Reshaping done. Use Test, Train and Evaluation Data")
+print("Shape training data:", X_train.shape)
+print("Shape training evaluation data:", X_test.shape)
+
+print("Selecting channels:", channels)
+X_train = X_train[:,:,:,channels]
+X_test = X_test[:,:,:,channels]
 
 
 if data_augmentation:
@@ -204,22 +182,36 @@ if not train:
     model = load_model(modelpath)
 
 #### EVALUATION EX1 + Ex2 ####
-if train:
-    print("The mean of exp. 1 is", np.mean(y_train))
+print("The mean of exp. 1 is", np.mean(y_train))
 
-    predictions_valid = model.predict(X_train.astype('float32'), batch_size=batch_size, verbose=2)
-    rms2 = rms(y_train, predictions_valid)**.5
-    print('Train Root mean squared error: ', rms2)
+predictions_valid = model.predict(X_train.astype('float32'), batch_size=batch_size, verbose=2)
+rms2 = rms(y_train, predictions_valid)**.5
+print('Train Root mean squared error: ', rms2)
 
 #### EVALUATION EX3 ####
+path_test_data = path_to_server_data + "/Ex3/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+path_test_labels = path_to_server_data + "/Ex3/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+X_test_ex3 = np.array(loadnumpy(path_test_data), dtype = np.uint8).astype('float32')
+y_test_ex3 = np.load(path_test_labels)[:,3]
+labels_test_ex3 = np.load(path_test_labels)[:,0]
+X_test_ex3 = X_test_ex3[labels_test_ex3!=4,:]
+y_test_ex3 = y_test_ex3[labels_test_ex3!=4]
+features_test_ex3 = np.load(path_test_labels)[:,1:]
+features_test_ex3 = features_test_ex3[labels_test_ex3!=4,:]
+labels_test_ex3 = labels_test_ex3[labels_test_ex3!=4]
+print("Ex3 data shape = ", X_test_ex3.shape)
+print("Ex3 labels shape = ", y_test_ex3.shape)
+X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
+X_test_ex3 = X_test_ex3[:,:,:,channels]
+
 predictions_valid_test = model.predict(X_test_ex3.astype('float32'), batch_size=batch_size, verbose=2)
 predictions_valid_test = predictions_valid_test[:,0]
-
+ # saved here
 threshold = 1000
 print("Discarding R2b >= ", threshold)
-y_test_ex3_ = y_test_ex3[y_test_ex3 < threshold]
+y_test_ex3_ = y_test_ex3[y_test_ex3 < 1000]
 # code.interact(local=dict(globals(), **locals()))
-predictions_valid_test_ = predictions_valid_test[y_test_ex3 < threshold]
+predictions_valid_test_ = predictions_valid_test[y_test_ex3 < 1000]
 
 rms3 = rms(y_test_ex3_, predictions_valid_test_)**.5
 print('Test Root mean squared error: ', rms3)
@@ -288,22 +280,12 @@ if train & modelsave:
     model.save(modelname)
     print("saved model")
 
-
-if save_outcomes:
-    import h5py
-    h5f = h5py.File(save_name,'w')
-    h5f.create_dataset('predictions_valid_test', data = predictions_valid_test)
-    h5f.create_dataset('y_test_ex3', data = y_test_ex3)
-    h5f.create_dataset('labels_test_ex3', data = labels_test_ex3)
-    h5f.create_dataset('pred_label', data = pred_label)
-    h5f.close()
-
 code.interact(local=dict(globals(), **locals()))
 
 #Plot Ordered Scatter
 plt.scatter(predictions_valid_test, y_test_ex3, marker='.', color='r', s = 2, label="Pearson correlation = " + str(pearson) + \
 " \nSpearman correlation = " + str(spearman) + \
-" \nTest rms (RIIb < "+ str(threshold) + ")= " + str(rms3))
+" \nTest rms (RIIb < 1000)= " + str(rms3))
 plt.xlim([0, 4000])
 plt.ylim([0, 4000])
 plt.ylabel('Prediction')
@@ -329,4 +311,4 @@ plt.show()
 
 
 code.interact(local=dict(globals(), **locals()))
-# plotBothConfusionMatrices(pred_label, labels_test_ex3, class_names)
+plotBothConfusionMatrices(pred_label, labels_test_ex3, class_names)
