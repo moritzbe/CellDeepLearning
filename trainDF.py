@@ -20,13 +20,14 @@ import _pickle as cPickle
 import code
 import os
 
+save_outcomes = True
 prevent_bleed_through = True
 server = True
 train = True
 modelsave = True
 data_normalization = False
 data_augmentation = False
-gpu = [3]
+gpu = [2]
 batch_size = 32
 epochs = 100
 random_state = 17
@@ -127,9 +128,12 @@ print("Ex2 labels shape = ", y_train_ex2.shape)
 print("Ex3 data shape = ", X_test_ex3.shape)
 print("Ex3 labels shape = ", y_test_ex3.shape)
 
-X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
-X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
-X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
+# X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
+# X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
+# X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
+X_train_ex1 = np.swapaxes(X_train_ex1, 1,3)
+X_train_ex2 = np.swapaxes(X_train_ex2, 1,3)
+X_test_ex3 = np.swapaxes(X_test_ex3, 1,3)
 
 # X_train_ex1 = naiveReshape(X_train_ex1, target_pixel_size=66)
 # X_test_ex2 = naiveReshape(X_test_ex2, target_pixel_size=66)
@@ -172,8 +176,8 @@ path = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/"
 if train:
     model = deepflow(channels, n_classes, lr, momentum, decay)
     change_lr = LearningRateScheduler(schedule)
-    csvlog = CSVLogger(path+'_train_log.csv', append=True)
-    checkpoint = ModelCheckpoint(path+'checkpoints/'+ '4_way_prevent_bt_shifted.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+    csvlog = CSVLogger(path+'_train_log_dirty_no_bs.csv', append=True)
+    checkpoint = ModelCheckpoint(path+'checkpoints/'+ '4_way_dirty_no_bs.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
     callbacks = [
         change_lr,
         csvlog,
@@ -203,13 +207,20 @@ print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
 
 #### Saving Model ####
 if train & modelsave:
-    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/4_way_prevent_bt_shifted" + str(channels) + "_bs=" + str(batch_size) + \
+    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/4_way_dirty_no_bs_ch_" + str(channels) + "_bs=" + str(batch_size) + \
             "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_aug=" + str(data_augmentation) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
             "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
             "_change_epoch=" + str(change_epoch) + "_decay2=" + str(decay2) + \
             "_lr2=" + str(lr2)  + "_acc1=" + str(acc_train) + "_acc2=" + str(acc_test) + ".h5"
     model.save(modelname)
     print("saved model")
+
+if save_outcomes:
+    import h5py
+    h5f = h5py.File('result_deep_trainDF_dirty_100_no_bs_eps','w')
+    h5f.create_dataset('predictions_valid_test', data = predictions_valid_test)
+    h5f.create_dataset('y_test_ex3', data = y_test_ex3)
+    h5f.close()
 
 code.interact(local=dict(globals(), **locals()))
 plotBothConfusionMatrices(np.argmax(predictions_valid_test, axis=1), y_test_ex3, class_names)

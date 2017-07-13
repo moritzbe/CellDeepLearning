@@ -27,15 +27,15 @@ modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/intensity_prediction_r
 # modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/intensity_prediction_r2b_based_on_ch_[0]_bs=32_epochs=40_norm=False_aug=True_split=0.9_lr1=0.01_momentum=0.9_decay1=0_rms2=179.18797775_rms3=_acc=91.52.h5"
 prevent_bleed_through = True
 save_outcomes = True
-save_name = "result_deep_regression_shifted_45_eps_cm_cd" #clean model = cm dirty data = dd
+save_name = "result_deep_regression_shifted_45_eps_cm_cd_no_bs" #clean model = cm dirty data = dd
 server = True
-train = False
-modelsave = False
+train = True
+modelsave = True
 data_normalization = False
 data_augmentation = False
-gpu = [3]
+gpu = [2]
 batch_size = 32
-epochs = 40
+epochs = 60
 random_state = 17
 channels = [0]
 n_classes = 1
@@ -158,8 +158,13 @@ print("Ex3 data shape = ", X_test_ex3.shape)
 print("Ex3 labels shape = ", y_test_ex3.shape)
 
 if train:
-    X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
-    X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
+    # X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
+    # X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
+    X_train_ex1 = np.swapaxes(X_train_ex1, 1,3)
+    X_train_ex2 = np.swapaxes(X_train_ex2, 1,3)
+
+
+
     print("Combining Ex1 and Ex2 for training:")
     X_train_c = np.vstack([X_train_ex1, X_train_ex2])
     y_train_c = np.append(y_train_ex1, y_train_ex2)
@@ -172,7 +177,8 @@ if train:
     X_train = X_train[:,:,:,channels]
     X_test = X_test[:,:,:,channels]
 
-X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
+X_test_ex3 = np.swapaxes(X_test_ex3, 1,3)
+# X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
 X_test_ex3 = X_test_ex3[:,:,:,channels]
 
 
@@ -190,8 +196,8 @@ path = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/"
 if train:
     model = deepregression(channels, n_classes, lr, momentum, decay)
     change_lr = LearningRateScheduler(schedule)
-    csvlog = CSVLogger(path+'predict_r2b_intensity_based_on_PGP_no_bleed_trough_shifted.csv', append=True)
-    checkpoint = ModelCheckpoint(path+'checkpoints/'+ 'predict_r2b_intensity_based_on_PGP_no_bleed_trough_shifted.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+    csvlog = CSVLogger(path+'predict_r2b_intensity_based_on_PGP_no_bleed_trough_shifted_no_bs.csv', append=True)
+    checkpoint = ModelCheckpoint(path+'checkpoints/'+ 'predict_r2b_intensity_based_on_PGP_no_bleed_trough_shifted_no_bs.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
     callbacks = [
         change_lr,
         csvlog,
@@ -281,7 +287,7 @@ acc = accuracy(labels_test_ex3, pred_label)
 print("Accuracy :", acc)
 #### Saving Model ####
 if train & modelsave:
-    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/intensity_prediction_r2b_nbts_based_on_ch_" + str(channels) + "_bs=" + str(batch_size) + \
+    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/int_pred_r2b_nbts_no_bs_based_on_ch_" + str(channels) + "_bs=" + str(batch_size) + \
             "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_aug=" + str(data_augmentation) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
             "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
             "_rms2=" + str(rms2)  + "_rms3=" + "_acc=" + str(acc) + ".h5"

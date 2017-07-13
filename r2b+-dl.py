@@ -20,11 +20,11 @@ import code
 import os
 
 server = True
-train = False
-modelsave = False
+train = True
+modelsave = True
 data_normalization = False
 data_augmentation = False
-gpu = [1]
+gpu = [2]
 batch_size = 32
 epochs = 100
 random_state = 17
@@ -125,9 +125,19 @@ print("Ex2 labels shape = ", y_train_ex2.shape)
 print("Ex3 data shape = ", X_test_ex3.shape)
 print("Ex3 labels shape = ", y_test_ex3.shape)
 
-X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
-X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
-X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
+# Fatal Reshape error
+# X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
+# X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
+# X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
+
+X_train_ex1 = np.swapaxes(X_train_ex1, 1,3)
+X_train_ex2 = np.swapaxes(X_train_ex2, 1,3)
+X_test_ex3 = np.swapaxes(X_test_ex3, 1,3)
+
+
+
+
+
 # X_train_ex1 = naiveReshape(X_train_ex1, target_pixel_size=66)
 # X_test_ex2 = naiveReshape(X_test_ex2, target_pixel_size=66)
 print("Combining Ex1 and Ex2 for training:")
@@ -166,8 +176,8 @@ path = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/"
 if train:
     model = deepflow(channels, n_classes, lr, momentum, decay)
     change_lr = LearningRateScheduler(schedule)
-    csvlog = CSVLogger(path+'new_r2b_only_PGP_train_log.csv', append=True)
-    checkpoint = ModelCheckpoint(path+'checkpoints/'+ 'PGP_only_r2b_checkpoint.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+    csvlog = CSVLogger(path+'new_r2b_only_PGP_train_log_no_bs.csv', append=True)
+    checkpoint = ModelCheckpoint(path+'checkpoints/'+ 'PGP_only_r2b_checkpoint_no_bs.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
     callbacks = [
         change_lr,
         csvlog,
@@ -197,7 +207,7 @@ print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
 
 #### Saving Model ####
 if train & modelsave:
-    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/140617_augmented_r2b+-_prediction_ch_" + str(channels) + "_bs=" + str(batch_size) + \
+    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/140617_augmented_r2b+-_prediction_ch_no_bs" + str(channels) + "_bs=" + str(batch_size) + \
             "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_aug=" + str(data_augmentation) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
             "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
             "_change_epoch=" + str(change_epoch) + "_decay2=" + str(decay2) + \

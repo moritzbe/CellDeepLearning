@@ -1,8 +1,7 @@
 import h5py
-h5f = h5py.File('result_deep_regression_shifted_45_eps','w')
-h5f.create_dataset('X', data = X)
-h5f.create_dataset('annotated', data = annotated)
-h5f.create_dataset('label_GM', data = label)
+h5f = h5py.File('result_deep_trainDF_shifted_1_eps','w')
+h5f.create_dataset('predictions_valid_test', data = predictions_valid_test)
+h5f.create_dataset('y_test_ex3', data = y_test_ex3)
 h5f.close()
 
 h5f = h5py.File('result_deep_regression_shifted_45_eps','r')
