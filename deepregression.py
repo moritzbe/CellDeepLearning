@@ -22,18 +22,19 @@ import os
 
 
 # clean model
-modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/intensity_prediction_r2b_nbts_based_on_ch_[0]_bs=32_epochs=45_norm=False_aug=False_split=0.9_lr1=0.01_momentum=0.9_decay1=0_rms2=63.1048360822_rms3=_acc=94.51.h5"
 # dirty model
 # modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/intensity_prediction_r2b_based_on_ch_[0]_bs=32_epochs=40_norm=False_aug=True_split=0.9_lr1=0.01_momentum=0.9_decay1=0_rms2=179.18797775_rms3=_acc=91.52.h5"
+
 prevent_bleed_through = True
 save_outcomes = True
-save_name = "result_deep_regression_shifted_45_eps_cm_cd_no_bs" #clean model = cm dirty data = dd
+resize = 0.125
+save_name = "result_deep_regression_shifted_45_eps_best_checkpoint_cm_cd_reduced=" + str(resize) #clean model = cm dirty data = dd
 server = True
 train = True
 modelsave = True
 data_normalization = False
-data_augmentation = False
-gpu = [2]
+data_augmentation = True
+gpu = [1]
 batch_size = 32
 epochs = 60
 random_state = 17
@@ -116,15 +117,16 @@ if server:
         path_test_data = path_to_server_data + "/Ex3/all_channels_66_66_full_no_zeros_in_cells.npy"
         path_test_labels = path_to_server_data + "/Ex3/labels_66_66_full_no_zeros_in_cells.npy"
 
+
 print("Loading training and test data. Use ex1 and ex2 for training and tuning and ex3 for testing.")
 if train:
-    X_train_ex1 = np.array(loadnumpy(path_train_data), dtype = np.uint8).astype('float32')
+    X_train_ex1 = np.array(loadnumpy(path_train_data)).astype('float32') # , dtype = np.uint8
     y_train_ex1 = np.load(path_train_labels)[:,3]
     labels_train_ex1 = np.load(path_train_labels)[:,0]
-    X_train_ex2 = np.array(loadnumpy(path_train_data2), dtype = np.uint8).astype('float32')
+    X_train_ex2 = np.array(loadnumpy(path_train_data2)).astype('float32')
     y_train_ex2 = np.load(path_train_labels2)[:,3]
     labels_train_ex2 = np.load(path_train_labels2)[:,0]
-X_test_ex3 = np.array(loadnumpy(path_test_data), dtype = np.uint8).astype('float32')
+X_test_ex3 = np.array(loadnumpy(path_test_data)).astype('float32')
 y_test_ex3 = np.load(path_test_labels)[:,3]
 labels_test_ex3 = np.load(path_test_labels)[:,0]
 print("done")
@@ -182,7 +184,7 @@ X_test_ex3 = np.swapaxes(X_test_ex3, 1,3)
 X_test_ex3 = X_test_ex3[:,:,:,channels]
 
 
-if data_augmentation:
+if train and data_augmentation:
     print("Data augmentation")
     X_train_l = X_train[:,:,::-1,:]
     X_train_u = X_train[:,::-1,:,:]
@@ -190,24 +192,33 @@ if data_augmentation:
     X_train = np.vstack([X_train, X_train_l, X_train_u, X_train_lu])
     y_train = np.append(y_train, np.append(y_train, np.append(y_train, y_train)))
 
-path = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/"
+path = "/home/moritz_berthold/dl/cellmodels/deepflow/130717/"
+checkpoint_path = path + "checkpoints/" + 'predict_r2b_intensity_based_on_PGP_no_bleed_trough_shifted_red=' + str(resize) + '.hdf5'
+csv_logger_path = path + "checkpoints/" + 'predict_r2b_intensity_based_on_PGP_no_bleed_trough_shifted_red=' + str(resize) + '.csv'
+# checkpoint_path = path + "checkpoints/" + 'predict_r2b_intensity_based_on_PGP_no_bleed_trough_shifted_drop=3.hdf5'
 
+# "/home/moritz_berthold/dl/cellmodels/deepflow/120617/checkpoints/predict_r2b_intensity_based_on_PGP_no_bleed_trough_shifted_drop=3.hdf5"
 #### TRAINING ####
 if train:
-    model = deepregression(channels, n_classes, lr, momentum, decay)
+    model = deepregression(channels, n_classes, lr, momentum, decay, resize)
     change_lr = LearningRateScheduler(schedule)
-    csvlog = CSVLogger(path+'predict_r2b_intensity_based_on_PGP_no_bleed_trough_shifted_no_bs.csv', append=True)
-    checkpoint = ModelCheckpoint(path+'checkpoints/'+ 'predict_r2b_intensity_based_on_PGP_no_bleed_trough_shifted_no_bs.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+    csvlog = CSVLogger(csv_logger_path, append=True)
+    checkpoint = ModelCheckpoint(checkpoint_path, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
     callbacks = [
         change_lr,
         csvlog,
         checkpoint,
     ]
     model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, shuffle=True, verbose=2, validation_data=(X_test, y_test), callbacks=callbacks)
+    del(model)
+    model = load_model(checkpoint_path)
 
 if not train:
-    print("Loading trained model", modelpath)
-    model = load_model(modelpath)
+    print("Loading trained model", checkpoint_path)
+    model = load_model(checkpoint_path)
+
+# code.interact(local=dict(globals(), **locals()))
+
 
 #### EVALUATION EX1 + Ex2 ####
 if train:
@@ -221,14 +232,18 @@ if train:
 predictions_valid_test = model.predict(X_test_ex3.astype('float32'), batch_size=batch_size, verbose=2)
 predictions_valid_test = predictions_valid_test[:,0]
 
-threshold = 1000
-print("Discarding R2b >= ", threshold)
-y_test_ex3_ = y_test_ex3[y_test_ex3 < threshold]
-# code.interact(local=dict(globals(), **locals()))
-predictions_valid_test_ = predictions_valid_test[y_test_ex3 < threshold]
+threshold = 1100
+threshold_2 = 300
+print("Discarding R2b <= ", threshold)
+print("Discarding R2b >= ", threshold_2)
 
-rms3 = rms(y_test_ex3_, predictions_valid_test_)**.5
+y_test_ex3_ = y_test_ex3[(y_test_ex3 < threshold_2) + (y_test_ex3 > threshold)]
+# predictions_valid_test_ = predictions_valid_test[y_test_ex3 < threshold]
+predictions_valid_test_ = predictions_valid_test[(threshold_2 > y_test_ex3) + (y_test_ex3 > threshold)]
+rms3 = rms(y_test_ex3, predictions_valid_test)**.5
+rms3_t = rms(y_test_ex3_, predictions_valid_test_)**.5
 print('Test Root mean squared error: ', rms3)
+print('Test Root mean squared error: ', rms3_t)
 spearman = spearmanr(y_test_ex3_, predictions_valid_test_)[0]
 pearson = pearsonr(y_test_ex3_, predictions_valid_test_)[0]
 print("The Spearman correlation coefficient on exp. 3 is ", spearman)
@@ -262,13 +277,19 @@ def detectPredictedLabel(y_test, y_pred):
     return label
 
 features_test_ex3 = features_test_ex3[labels_test_ex3!=4,:]
+features_test_ex3_ = features_test_ex3[(y_test_ex3 < threshold_2) + (y_test_ex3 > threshold),:]
 labels_test_ex3 = labels_test_ex3[labels_test_ex3!=4]
-
+labels_test_ex3_ = labels_test_ex3[(y_test_ex3 < threshold_2) + (y_test_ex3 > threshold)]
 print("max", np.max(features_test_ex3[-1,:]))
 
 pred_label = np.zeros_like(labels_test_ex3)
 for i in range(predictions_valid_test.shape[0]):
     pred_label[i] = detectPredictedLabel(features_test_ex3[i,:], predictions_valid_test[i])
+
+pred_label_ = np.zeros_like(labels_test_ex3_)
+for i in range(predictions_valid_test_.shape[0]):
+    pred_label_[i] = detectPredictedLabel(features_test_ex3_[i,:], predictions_valid_test_[i])
+
 
 def convertLabels(ground_truth):
     ground_truth[np.argwhere(ground_truth==0)] = 0 # +ve
@@ -280,17 +301,25 @@ def convertLabels(ground_truth):
 # remove y = 4
 labels_test_ex3 = convertLabels(labels_test_ex3)
 pred_label = convertLabels(pred_label)
+labels_test_ex3_ = convertLabels(labels_test_ex3_)
+pred_label_ = convertLabels(pred_label_)
+print("Deepregression")
 print("Uniques in pred_label", np.unique(pred_label))
 print("Uniques in ground_truth", np.unique(labels_test_ex3))
 
 acc = accuracy(labels_test_ex3, pred_label)
 print("Accuracy :", acc)
+acc_ = accuracy(labels_test_ex3_, pred_label_)
+print("New accuracy :", acc_)
+
+
+
 #### Saving Model ####
 if train & modelsave:
-    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/int_pred_r2b_nbts_no_bs_based_on_ch_" + str(channels) + "_bs=" + str(batch_size) + \
+    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/int_pred_r2b_nbts_reduced.25_based_on_ch_" + str(channels) + "_bs=" + str(batch_size) + \
             "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_aug=" + str(data_augmentation) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
             "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
-            "_rms2=" + str(rms2)  + "_rms3=" + "_acc=" + str(acc) + ".h5"
+            "_rms2=" + str(rms2)  + "_rms3=" + "_acc=" + str(acc) + "_res=" + str(resize)+".h5"
     model.save(modelname)
     print("saved model")
 
@@ -304,20 +333,20 @@ if save_outcomes:
     h5f.create_dataset('pred_label', data = pred_label)
     h5f.close()
 
-code.interact(local=dict(globals(), **locals()))
 
 #Plot Ordered Scatter
 plt.scatter(predictions_valid_test, y_test_ex3, marker='.', color='r', s = 2, label="Pearson correlation = " + str(pearson) + \
 " \nSpearman correlation = " + str(spearman) + \
-" \nTest rms (RIIb < "+ str(threshold) + ")= " + str(rms3))
+" \nRMS test (ignoring cells with 300<RIIb<1100) " + str(rms3_t))
+# " \nTest rms (RIIb < "+ str(threshold) + ")= " + str(rms3))
 plt.xlim([0, 4000])
 plt.ylim([0, 4000])
 plt.ylabel('Prediction')
 plt.xlabel('Ground Truth')
 plt.title("Intensity prediction of channel " + str(ch) + " using Random Forest regression")
 leg = plt.legend(loc="upper right")
-for item in leg.legendHandles:
-    item.set_visible(False)
+# for item in leg.legendHandles:
+#    item.set_visible(False)
 plt.show()
 
 
@@ -333,6 +362,4 @@ plt.ylabel('Intensity')
 plt.xlabel('Cells ordered by ground truth intensity magnitude')
 plt.show()
 
-
-code.interact(local=dict(globals(), **locals()))
 # plotBothConfusionMatrices(pred_label, labels_test_ex3, class_names)

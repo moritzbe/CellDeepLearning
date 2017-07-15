@@ -85,9 +85,7 @@ def occlusion_heatmap(net, x, target, number_of_classes, square_length=7):
     for i in range(s0):
         # batch s1 occluded images for faster prediction
         for j in range(s1):
-            # x_pad = np.pad(img, ((0, 0), (pad, pad), (pad, pad)), 'constant')
             x_pad = np.pad(img[:,:,0], ((pad,pad), (pad, pad)), 'constant')
-            # code.interact(local=dict(globals(), **locals()))
             x_pad[i:i + square_length, j:j + square_length] = 0.
             x_occluded[j,:,:] = x_pad[pad:-pad, pad:-pad]
             # plt.imshow(x_occluded[0,:,:])
@@ -147,9 +145,10 @@ if server:
     path_test_labels = path_to_server_data + "/Ex3/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
 
 
-X_test_ex3 = np.array(loadnumpy(path_test_data), dtype = np.uint8).astype('float32')
+X_test_ex3 = np.array(loadnumpy(path_test_data)).astype('float32')
 y_test_ex3 = convertLabels(np.load(path_test_labels)[:,0])
 
+code.interact(local=dict(globals(), **locals()))
 
 print("Ex3 data shape = ", X_test_ex3.shape)
 print("Ex3 labels shape = ", y_test_ex3.shape)

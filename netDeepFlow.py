@@ -44,26 +44,28 @@ def simpleFactory(data, ch_1x1, ch_3x3):
 	concat = concatenate([conv1x1, conv3x3], axis=-1)
 	return concat
 
-def deepflow(channels, n_classes, lr, momentum, decay):
+def deepflow(channels, n_classes, lr, momentum, decay, resize):
 	# model = deepflow([1,2,3,4], 4, .01, .09, .0005)
+	resize_factor = resize
 	n_channels = len(channels)
 	inputs = Input(shape=(66, 66, n_channels)) # 66x66
 	conv1 = convFactory(data=inputs, num_filter=96 , kernel=(3,3), pad="same", act_type="relu") # same
-	in3a = simpleFactory(conv1, 32, 32)
-	in3b = simpleFactory(in3a, 32, 48)
-	in3c = downsampleFactory(in3b, 80) # 33x33
-	in4a = simpleFactory(in3c, 112, 48)
-	in4b = simpleFactory(in4a, 96, 64)
-	in4c = simpleFactory(in4b, 80, 80)
-	in4d = simpleFactory(in4c, 48, 96)
-	in4e = downsampleFactory(in4d, 96) # 17x17
-	in5a = simpleFactory(in4e, 176, 160)
-	in5b = simpleFactory(in5a, 176, 160)
-	in6a = downsampleFactory(in5b, 96) # 8x8
-	in6b = simpleFactory(in6a, 176, 160)
-	in6c = simpleFactory(in6b, 176, 160)
+	in3a = simpleFactory(conv1, 32, int(round(32*resize_factor)))
+	in3b = simpleFactory(in3a, 32, int(round(48*resize_factor)))
+	in3c = downsampleFactory(in3b, int(round(80*resize_factor))) # 33x33
+	in4a = simpleFactory(in3c, 112, int(round(48*resize_factor)))
+	in4b = simpleFactory(in4a, 96, int(round(64*resize_factor)))
+	in4c = simpleFactory(in4b, 80, int(round(80*resize_factor)))
+	in4d = simpleFactory(in4c, 48, int(round(96*resize_factor)))
+	in4e = downsampleFactory(in4d, int(round(96*resize_factor))) # 17x17
+	in5a = simpleFactory(in4e, 176, int(round(160*resize_factor)))
+	in5b = simpleFactory(in5a, 176, int(round(160*resize_factor)))
+	in6a = downsampleFactory(in5b, int(round(96*resize_factor))) # 8x8
+	in6b = simpleFactory(in6a, 176, int(round(160*resize_factor)))
+	in6c = simpleFactory(in6b, 176, int(round(160*resize_factor)))
 	pool = AveragePooling2D(pool_size=(9, 9), strides=None, padding='valid', data_format=None)(in6c) # valid
 	flatten = Flatten()(pool)
+	# dropout = Dropout(drop_out, noise_shape=None, seed=17)(flatten)
 	fc = Dense(n_classes, activation=None, name="last-layer-activations")(flatten)
 	softmax = Activation(activation="softmax")(fc)
 	model = Model(inputs=inputs, outputs=softmax)
@@ -71,26 +73,28 @@ def deepflow(channels, n_classes, lr, momentum, decay):
 	model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 	return model
 
-def deepregression(channels, n_classes, lr, momentum, decay):
+def deepregression(channels, n_classes, lr, momentum, decay, resize):
 	# model = deepflow([1,2,3,4], 4, .01, .09, .0005)
+	resize_factor = resize
 	n_channels = len(channels)
 	inputs = Input(shape=(66, 66, n_channels)) # 66x66
 	conv1 = convFactory(data=inputs, num_filter=96 , kernel=(3,3), pad="same", act_type="relu") # same
-	in3a = simpleFactory(conv1, 32, 32)
-	in3b = simpleFactory(in3a, 32, 48)
-	in3c = downsampleFactory(in3b, 80) # 33x33
-	in4a = simpleFactory(in3c, 112, 48)
-	in4b = simpleFactory(in4a, 96, 64)
-	in4c = simpleFactory(in4b, 80, 80)
-	in4d = simpleFactory(in4c, 48, 96)
-	in4e = downsampleFactory(in4d, 96) # 17x17
-	in5a = simpleFactory(in4e, 176, 160)
-	in5b = simpleFactory(in5a, 176, 160)
-	in6a = downsampleFactory(in5b, 96) # 8x8
-	in6b = simpleFactory(in6a, 176, 160)
-	in6c = simpleFactory(in6b, 176, 160)
+	in3a = simpleFactory(conv1, 32, int(round(32*resize_factor)))
+	in3b = simpleFactory(in3a, 32, int(round(48*resize_factor)))
+	in3c = downsampleFactory(in3b, int(round(80*resize_factor))) # 33x33
+	in4a = simpleFactory(in3c, 112, int(round(48*resize_factor)))
+	in4b = simpleFactory(in4a, 96, int(round(64*resize_factor)))
+	in4c = simpleFactory(in4b, 80, int(round(80*resize_factor)))
+	in4d = simpleFactory(in4c, 48, int(round(96*resize_factor)))
+	in4e = downsampleFactory(in4d, int(round(96*resize_factor))) # 17x17
+	in5a = simpleFactory(in4e, 176, int(round(160*resize_factor)))
+	in5b = simpleFactory(in5a, 176, int(round(160*resize_factor)))
+	in6a = downsampleFactory(in5b, int(round(96*resize_factor))) # 8x8
+	in6b = simpleFactory(in6a, 176, int(round(160*resize_factor)))
+	in6c = simpleFactory(in6b, 176, int(round(160*resize_factor)))
 	pool = AveragePooling2D(pool_size=(9, 9), strides=None, padding='valid', data_format=None)(in6c) # valid
 	flatten = Flatten()(pool)
+	# dropout = Dropout(drop_out, noise_shape=None, seed=17)(flatten)
 	fc = Dense(n_classes, activation=None, name="last-layer-activations")(flatten) # move up, before fully connected layer!
 	# possible batch normalization
 	softmax = Activation(activation="linear")(fc)
@@ -102,4 +106,7 @@ def deepregression(channels, n_classes, lr, momentum, decay):
 def showModel(model, name): #only works locally showModel(model, name = "pool9")
 	plot_model(model, show_shapes=True, to_file="model_visualisation/" + name + ".png")
 
+# ch = [0]
+# model = deepregression(ch, 1, .1, .9, .9, .1)
 # code.interact(local=dict(globals(), **locals()))
+# model.summary()
