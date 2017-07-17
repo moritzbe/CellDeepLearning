@@ -27,14 +27,15 @@ import os
 
 prevent_bleed_through = True
 save_outcomes = True
-resize = 0.125
+# resize = 0.03125
+resize = 0.0625
 save_name = "result_deep_regression_shifted_45_eps_best_checkpoint_cm_cd_reduced=" + str(resize) #clean model = cm dirty data = dd
 server = True
 train = True
 modelsave = True
 data_normalization = False
 data_augmentation = True
-gpu = [1]
+gpu = [0]
 batch_size = 32
 epochs = 60
 random_state = 17

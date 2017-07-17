@@ -23,14 +23,14 @@ import os
 save_outcomes = True
 prevent_bleed_through = True
 server = True
-dropout = 1
+resize = .125
 train = True
 modelsave = True
 data_normalization = False
-data_augmentation = False
-gpu = [0]
+data_augmentation = True
+gpu = [1]
 batch_size = 32
-epochs = 100
+epochs = 40
 random_state = 17
 channels = [0,1]
 n_classes = 4
@@ -104,8 +104,7 @@ if server:
         path_train_labels2 = path_to_server_data + "/Ex2/labels_66_66_full_no_zeros_in_cells.npy"
         path_test_data = path_to_server_data + "/Ex3/all_channels_66_66_full_no_zeros_in_cells.npy"
         path_test_labels = path_to_server_data + "/Ex3/labels_66_66_full_no_zeros_in_cells.npy"
-if dropout > 0:
-    print("With dropout ", dropout)
+
 
 print("Loading training and test data. Use ex1 and ex2 for training and tuning and ex3 for testing.")
 X_train_ex1 = np.array(loadnumpy(path_train_data)).astype('float32')
@@ -169,13 +168,13 @@ if data_augmentation:
 
 
 path = "/home/moritz_berthold/dl/cellmodels/deepflow/130717/"
-csv_logger_path = path + "checkpoints/" + '_train_log_clean_drop' + str(dropout) + 'resize.5.csv'
-checkpoint_path = path + "checkpoints/" + '4_way_clean_drop=' + str(dropout) + 'resize.5.hdf5'
+csv_logger_path = path + "checkpoints/" + '4_way_clean_train_log_clean_resize' + str(resize) + '.csv'
+checkpoint_path = path + "checkpoints/" + '4_way_clean_resize=' + str(resize) + '.hdf5'
 
 
 #### TRAINING ####
 if train:
-    model = deepflow(channels, n_classes, lr, momentum, decay, dropout)
+    model = deepflow(channels, n_classes, lr, momentum, decay, resize)
     change_lr = LearningRateScheduler(schedule)
     csvlog = CSVLogger(csv_logger_path, append=True)
     checkpoint = ModelCheckpoint(checkpoint_path, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
@@ -211,7 +210,7 @@ print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
 
 #### Saving Model ####
 if train & modelsave:
-    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/4_way_clean_drop" + str(dropout) + "resize.5_ch_" + str(channels) + "_bs=" + str(batch_size) + \
+    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/4_way_clean_resize" + str(resize) + "_ch_" + str(channels) + "_bs=" + str(batch_size) + \
             "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_aug=" + str(data_augmentation) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
             "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
             "_change_epoch=" + str(change_epoch) + "_decay2=" + str(decay2) + \
@@ -221,7 +220,7 @@ if train & modelsave:
 
 if save_outcomes:
     import h5py
-    h5f = h5py.File('result_deep_trainDF_clean_100_drop' + str(dropout) + '_eps_resize.5','w')
+    h5f = h5py.File('result_deep_trainDF_clean_100_resize' + str(resize) + '_eps','w')
     h5f.create_dataset('predictions_valid_test', data = predictions_valid_test)
     h5f.create_dataset('y_test_ex3', data = y_test_ex3)
     h5f.close()
