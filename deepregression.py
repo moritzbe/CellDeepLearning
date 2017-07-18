@@ -19,6 +19,8 @@ from scipy.stats import pearsonr, spearmanr
 import _pickle as cPickle
 import code
 import os
+import pandas as pd
+
 
 
 # clean model
@@ -26,16 +28,16 @@ import os
 # modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/intensity_prediction_r2b_based_on_ch_[0]_bs=32_epochs=40_norm=False_aug=True_split=0.9_lr1=0.01_momentum=0.9_decay1=0_rms2=179.18797775_rms3=_acc=91.52.h5"
 
 prevent_bleed_through = True
-save_outcomes = True
-# resize = 0.03125
-resize = 0.0625
+save_outcomes = False
+resize = 0.03125
+# resize = 0.0625
 save_name = "result_deep_regression_shifted_45_eps_best_checkpoint_cm_cd_reduced=" + str(resize) #clean model = cm dirty data = dd
 server = True
-train = True
+train = False
 modelsave = True
 data_normalization = False
 data_augmentation = True
-gpu = [0]
+gpu = [1]
 batch_size = 32
 epochs = 60
 random_state = 17
@@ -217,6 +219,7 @@ if train:
 if not train:
     print("Loading trained model", checkpoint_path)
     model = load_model(checkpoint_path)
+    print(model.summary())
 
 # code.interact(local=dict(globals(), **locals()))
 
@@ -362,5 +365,20 @@ plt.title(str(ch) + " intensity estimate and ground truth ordered by magnitude")
 plt.ylabel('Intensity')
 plt.xlabel('Cells ordered by ground truth intensity magnitude')
 plt.show()
+
+
+tb = pd.read_table(csv_logger_path, delimiter=",")
+
+loss = tb["loss"]
+val_loss = tb["val_loss"]
+plt.plot(loss,c='r',alpha=0.5, linewidth=3)
+plt.plot(val_loss,c='blue',alpha=0.5, linewidth=3)
+plt.xlim([0, loss.size])
+plt.ylim([0, 400000])
+plt.show()
+code.interact(local=dict(globals(), **locals()))
+
+
+
 
 # plotBothConfusionMatrices(pred_label, labels_test_ex3, class_names)

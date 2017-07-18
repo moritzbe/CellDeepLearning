@@ -19,16 +19,17 @@ import numpy as np
 import _pickle as cPickle
 import code
 import os
+import pandas as pd
 
-save_outcomes = True
+save_outcomes = False
 prevent_bleed_through = True
 server = True
-resize = .125
-train = True
+resize = 0.125
+train = False
 modelsave = True
 data_normalization = False
 data_augmentation = True
-gpu = [1]
+gpu = [3]
 batch_size = 32
 epochs = 40
 random_state = 17
@@ -48,6 +49,19 @@ decay2 = 0.0005
 # modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/130617_better_model_ch_[0, 1]_bs=32_epochs=100_norm=False_split=0.9_lr1=0.01_momentum=0.9_decay1=0_change_epoch=85_decay2=0.0005_lr2=0.001_acc1=[2.8651503068087471e-06, 1.0]_acc2=[0.88190338921957712, 0.87146544643904733].h5"
 modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/checkpoints/augmentation_checkpoint_resize.5.hdf5"
 
+
+# full:
+# csv = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/_train_log_dirty_no_bs.csv"
+
+
+path = "/home/moritz_berthold/dl/cellmodels/deepflow/130717/"
+# full model:
+# csv_logger_path = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/_train_log_dirty_no_bs.csv"
+# checkpoint_path  = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/checkpoints/4_way_dirty_no_bs.hdf5" # actually the wrong model, look at screenshots
+
+# half model:
+# csv_logger_path = "/home/moritz_berthold/dl/cellmodels/deepflow/130717/checkpoints/_train_log_clean_drop1resize.5.csv"
+# checkpoint_path = path + "checkpoints/" + '4_way_clean_drop=1resize.5.hdf5'
 
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in gpu])
 np.random.seed(seed=random_state)
@@ -167,8 +181,13 @@ if data_augmentation:
 
 
 
+# path = "/home/moritz_berthold/dl/cellmodels/deepflow/130717/"
+# csv_logger_path = path + "checkpoints/" + '4_way_clean_aug_train_log_resize' + str(resize) + '.csv'
+# checkpoint_path = path + "checkpoints/" + '4_way_clean_aug_resize=' + str(resize) + '.hdf5'
+
+
 path = "/home/moritz_berthold/dl/cellmodels/deepflow/130717/"
-csv_logger_path = path + "checkpoints/" + '4_way_clean_train_log_clean_resize' + str(resize) + '.csv'
+csv_logger_path = path + "checkpoints/" + '4_way_clean_train_log_resize' + str(resize) + '.csv'
 checkpoint_path = path + "checkpoints/" + '4_way_clean_resize=' + str(resize) + '.hdf5'
 
 
@@ -191,39 +210,64 @@ if not train:
     print("Loading trained model", checkpoint_path)
     model = load_model(checkpoint_path)
 
+# code.interact(local=dict(globals(), **locals()))
+plotRocCurve(model, X_test_ex3, y_test_ex3, class_names, batch_size)
+
 print("TrainDF")
 #### EVALUATION EX1 + Ex2 ####
 predictions_valid = model.predict(X_train.astype('float32'), batch_size=batch_size, verbose=2)
-log_loss_train = log_loss(y_train, predictions_valid)
-print('Score log_loss train: ', log_loss_train)
+# predictions_val = model.predict(X_test.astype('float32'), batch_size=batch_size, verbose=2)
+# log_loss_train = log_loss(y_train, predictions_valid)
+# print('Score log_loss train: ', log_loss_train)
 acc_train = model.evaluate(X_train.astype('float32'), y_train, verbose=0)
 print("Score accuracy train: %.2f%%" % (acc_train[1]*100))
 
+acc_val = model.evaluate(X_test.astype('float32'), y_test, verbose=0)
+print("Score accuracy val: %.2f%%" % (acc_val[1]*100))
+
 #### EVALUATION EX3 ####
 predictions_valid_test = model.predict(X_test_ex3.astype('float32'), batch_size=batch_size, verbose=2)
-log_loss_test = log_loss(y_test_ex3, predictions_valid_test)
-print('Score log_loss test: ', log_loss_test)
+# log_loss_test = log_loss(y_test_ex3, predictions_valid_test)
+# print('Score log_loss test: ', log_loss_test)
 acc_test = model.evaluate(X_test_ex3.astype('float32'), y_test_ex3, verbose=0)
 print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
 
+plotBothConfusionMatrices(np.argmax(predictions_valid_test, axis=1), y_test_ex3, class_names)
 
 
 #### Saving Model ####
-if train & modelsave:
-    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/4_way_clean_resize" + str(resize) + "_ch_" + str(channels) + "_bs=" + str(batch_size) + \
-            "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_aug=" + str(data_augmentation) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
-            "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
-            "_change_epoch=" + str(change_epoch) + "_decay2=" + str(decay2) + \
-            "_lr2=" + str(lr2)  + "_acc1=" + str(acc_train) + "_acc2=" + str(acc_test) + ".h5"
-    model.save(modelname)
-    print("saved model")
+# if train & modelsave:
+#     modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/4_way_clean_resize" + str(resize) + "_ch_" + str(channels) + "_bs=" + str(batch_size) + \
+#             "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_aug=" + str(data_augmentation) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
+#             "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
+#             "_change_epoch=" + str(change_epoch) + "_decay2=" + str(decay2) + \
+#             "_lr2=" + str(lr2)  + "_acc1=" + str(acc_train) + "_acc2=" + str(acc_test) + ".h5"
+#     model.save(modelname)
+#     print("saved model")
 
 if save_outcomes:
     import h5py
-    h5f = h5py.File('result_deep_trainDF_clean_100_resize' + str(resize) + '_eps','w')
+    h5f = h5py.File('result_deep_trainDF_clean_100_aug_resize' + str(resize) + '_eps','w')
     h5f.create_dataset('predictions_valid_test', data = predictions_valid_test)
     h5f.create_dataset('y_test_ex3', data = y_test_ex3)
     h5f.close()
 
+
+tb = pd.read_table(csv_logger_path, delimiter=",")
+
+acc = tb["acc"]
+val_acc = tb["val_acc"]
+
+
+
+
+plt.plot(acc,c='r',alpha=0.5, linewidth=3)
+plt.plot(val_acc,c='blue',alpha=0.5, linewidth=3)
+plt.xlim([0, acc.size])
+plt.ylim([0, 1])
+# plt.ylim([0, np.max([np.max(loss), np.max(val_loss)])])
+plt.title("Learning curves, train and val accuracies")
+plt.ylabel('Accuracy')
+plt.xlabel('Training epochs')
+plt.show()
 code.interact(local=dict(globals(), **locals()))
-plotBothConfusionMatrices(np.argmax(predictions_valid_test, axis=1), y_test_ex3, class_names)

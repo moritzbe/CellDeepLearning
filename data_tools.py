@@ -4,6 +4,11 @@ from sklearn.metrics import confusion_matrix, mean_squared_error
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import itertools
+from sklearn import svm, datasets
+from sklearn.metrics import roc_curve, auc
+from sklearn.preprocessing import label_binarize
+from scipy import interp
+
 import math
 # import pandas
 import code
@@ -135,6 +140,76 @@ def accuracy(y_test, pred):
 			rights += 1
 	accuracy = float(rights) / float(len(y_test))
 	return round(accuracy, 4)*100
+
+def plotRocCurve(model, X, y, class_names, batch_size):
+	# Compute ROC curve and ROC area for each class
+
+	fpr = dict()
+	tpr = dict()
+	roc_auc = dict()
+	y = label_binarize(y, classes=np.unique(y))
+	n_classes = 4
+
+	# Hack
+	# code.interact(local=dict(globals(), **locals()))
+	# y_test2 = np.zeros([y_test.shape[0],2])
+	# for i in xrange(y_test2.shape[0]):
+	# 	y_test2[i,y_test[i]]=1
+	# y_test = y_test2
+
+	y_score = model.predict(X.astype('float32'), batch_size=batch_size, verbose=2)
+
+	for i in range(n_classes):
+	    fpr[i], tpr[i], _ = roc_curve(y[:, i], y_score[:, i])
+	    roc_auc[i] = auc(fpr[i], tpr[i])
+
+	# Compute micro-average ROC curve and ROC area
+	lw = 2
+
+	fpr["micro"], tpr["micro"], _ = roc_curve(y.ravel(), y_score.ravel())
+	roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+
+	# First aggregate all false positive rates
+	all_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))
+	# Then interpolate all ROC curves at this points
+	mean_tpr = np.zeros_like(all_fpr)
+	for i in range(n_classes):
+	    mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+	# Finally average it and compute AUC
+	mean_tpr /= n_classes
+	fpr["macro"] = all_fpr
+	tpr["macro"] = mean_tpr
+	roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+	# Plot all ROC curves
+	plt.figure()
+	# colors for the colorblind
+	colors=np.array(['#43a2ca','#8856a7','#e34a33','#2ca25f','#66a61e','#e6ab02','#a6761d','#666666'])
+	for i, color in zip(range(n_classes), colors):
+	    plt.plot(fpr[i], tpr[i], color=color, lw=lw,
+	             label='{0} (AUC = {1:0.4f})'
+	             ''.format(class_names[i], roc_auc[i]))
+
+	plt.plot([0, 1], [0, 1], 'k--', lw=lw)
+	plt.xlim([0.0, .2])
+	plt.ylim([0.7, 1.0])
+
+	# plt.xlim([0.0, 1.0])
+	# plt.ylim([0.0, 1.0])
+	plt.xlabel('False Positive Rate')
+	plt.ylabel('True Positive Rate')
+	plt.title('Receiver Operating Characteristic')
+	plt.legend(loc="lower right")
+	plt.show()
+	# path_to_thesis = "/Users/moritzberthold/Desktop/Thesis/images/mlplots/"
+	# filename = "roc2_all_channels_and_experiments"
+	# plt.savefig(path_to_thesis + str(filename) + '.eps', edgecolor='none')
+
+	# code.interact(local=dict(globals(), **locals()))
+
+
+
+
+
 
 
 import numpy as Math

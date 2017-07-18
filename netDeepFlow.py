@@ -99,7 +99,8 @@ def deepregression(channels, n_classes, lr, momentum, decay, resize):
 	# possible batch normalization
 	softmax = Activation(activation="linear")(fc)
 	model = Model(inputs=inputs, outputs=softmax)
-	optimizer = SGD(lr=lr, momentum=momentum, decay=decay, nesterov=False)
+
+	# optimizer = SGD(lr=lr, momentum=momentum, decay=decay, nesterov=False)
 	model.compile(loss="mse", optimizer="adam")
 	return model
 

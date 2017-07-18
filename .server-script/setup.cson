@@ -8,7 +8,7 @@ server:
 # login info is kept in secrets.cson
 
 options:
-  syncChangedFiles: no
+  syncChangedFiles: yes
   scriptOnRun:  'build.sh'
   scriptOnSave: ''
   useGitignore: yes

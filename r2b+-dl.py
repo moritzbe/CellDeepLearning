@@ -13,24 +13,30 @@ from keras.callbacks import CSVLogger
 from keras.models import load_model
 from sklearn.metrics import log_loss
 from keras.callbacks import LearningRateScheduler
+from keras.preprocessing.image import ImageDataGenerator
 import keras.backend as K
 import numpy as np
 import _pickle as cPickle
 import code
 import os
+import pandas as pd
 
+save_outcomes = True
+prevent_bleed_through = True
 server = True
+resize = 0.125
 train = True
 modelsave = True
 data_normalization = False
 data_augmentation = False
-gpu = [2]
+gpu = [0]
 batch_size = 32
-epochs = 100
+epochs = 40
 random_state = 17
-channels = [0]
+channels = [0,1]
 n_classes = 2
 split = 0.9
+class_names = ["RIIb+", "RIIb-"]
 
 ### Optimizer ###
 lr = 0.01
@@ -40,8 +46,6 @@ change_epoch = 85
 lr2 = 0.001
 decay2 = 0.0005
 
-class_names = ["RIIb+", "RIIb-"]
-
 def convertLabels(ground_truth):
     ground_truth[np.argwhere(ground_truth==0)] = 0 # +ve
     ground_truth[np.argwhere(ground_truth==2)] = 0 # +ve
@@ -49,13 +53,9 @@ def convertLabels(ground_truth):
     ground_truth[np.argwhere(ground_truth==3)] = 1 # -ve
     return ground_truth
 
-### Optimizer ###
-lr = 0.01
-momentum = 0.9
-decay = 0.0005
+# modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/130617_better_model_ch_[0, 1]_bs=32_epochs=100_norm=False_split=0.9_lr1=0.01_momentum=0.9_decay1=0_change_epoch=85_decay2=0.0005_lr2=0.001_acc1=[2.8651503068087471e-06, 1.0]_acc2=[0.88190338921957712, 0.87146544643904733].h5"
+modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/checkpoints/augmentation_checkpoint_resize.5.hdf5"
 
-# modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/140617r2b+-_prediction_ch_[0]_bs=32_epochs=100_norm=False_split=0.9_lr1=0.01_momentum=0.9_decay1=0.0005_change_epoch=85_decay2=0.0005_lr2=0.001_acc1=[2.0498867458626939e-05, 1.0]_acc2=[0.30993385431939385, 0.94195119090921142].h5"
-modelpath = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/checkpoints/PGP_only_r2b_checkpoint.hdf5"
 
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in gpu])
 np.random.seed(seed=random_state)
@@ -90,29 +90,41 @@ def schedule(epoch):
 
 path_to_server_data = "/home/moritz_berthold/cellData"
 
-if not server:
-    path_train_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_66_66_full_no_zeros_in_cells.npy"
-    path_train_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/labels_66_66_full_no_zeros_in_cells.npy"
-    path_test_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/all_channels_66_66_full_no_zeros_in_cells.npy"
-    path_test_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/labels_66_66_full_no_zeros_in_cells.npy"
+# if not server:
+#     path_train_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_66_66_full_no_zeros_in_cells.npy"
+#     path_train_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/labels_66_66_full_no_zeros_in_cells.npy"
+#     path_test_data = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/all_channels_66_66_full_no_zeros_in_cells.npy"
+#     path_test_labels = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/labels_66_66_full_no_zeros_in_cells.npy"
 
 if server:
-    path_train_data = path_to_server_data + "/Ex1/all_channels_66_66_full_no_zeros_in_cells.npy"
-    path_train_labels = path_to_server_data + "/Ex1/labels_66_66_full_no_zeros_in_cells.npy"
-    path_train_data2 = path_to_server_data + "/Ex2/all_channels_66_66_full_no_zeros_in_cells.npy"
-    path_train_labels2 = path_to_server_data + "/Ex2/labels_66_66_full_no_zeros_in_cells.npy"
-    path_test_data = path_to_server_data + "/Ex3/all_channels_66_66_full_no_zeros_in_cells.npy"
-    path_test_labels = path_to_server_data + "/Ex3/labels_66_66_full_no_zeros_in_cells.npy"
+    if prevent_bleed_through:
+        print("Prevent Bleed Through")
+        path_train_data = path_to_server_data + "/Ex1/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+        path_train_labels = path_to_server_data + "/Ex1/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+        path_train_data2 = path_to_server_data + "/Ex2/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+        path_train_labels2 = path_to_server_data + "/Ex2/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+        path_test_data = path_to_server_data + "/Ex3/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+        path_test_labels = path_to_server_data + "/Ex3/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy"
+    else:
+        path_train_data = path_to_server_data + "/Ex1/all_channels_66_66_full_no_zeros_in_cells.npy"
+        path_train_labels = path_to_server_data + "/Ex1/labels_66_66_full_no_zeros_in_cells.npy"
+        path_train_data2 = path_to_server_data + "/Ex2/all_channels_66_66_full_no_zeros_in_cells.npy"
+        path_train_labels2 = path_to_server_data + "/Ex2/labels_66_66_full_no_zeros_in_cells.npy"
+        path_test_data = path_to_server_data + "/Ex3/all_channels_66_66_full_no_zeros_in_cells.npy"
+        path_test_labels = path_to_server_data + "/Ex3/labels_66_66_full_no_zeros_in_cells.npy"
 
 
 print("Loading training and test data. Use ex1 and ex2 for training and tuning and ex3 for testing.")
-X_train_ex1 = np.array(loadnumpy(path_train_data), dtype = np.uint8).astype('float32')
-y_train_ex1 = convertLabels(np.load(path_train_labels)[:,0])
-X_train_ex2 = np.array(loadnumpy(path_train_data2), dtype = np.uint8).astype('float32')
-y_train_ex2 = convertLabels(np.load(path_train_labels2)[:,0])
-X_test_ex3 = np.array(loadnumpy(path_test_data), dtype = np.uint8).astype('float32')
-y_test_ex3 = convertLabels(np.load(path_test_labels)[:,0])
+X_train_ex1 = np.array(loadnumpy(path_train_data)).astype('float32')
+y_train_ex1 = np.load(path_train_labels)[:,0]
+X_train_ex2 = np.array(loadnumpy(path_train_data2)).astype('float32')
+y_train_ex2 = np.load(path_train_labels2)[:,0]
+X_test_ex3 = np.array(loadnumpy(path_test_data)).astype('float32')
+y_test_ex3 = np.load(path_test_labels)[:,0]
 print("done")
+
+# code.interact(local=dict(globals(), **locals()))
+
 
 # sensible?
 if data_normalization:
@@ -125,21 +137,11 @@ print("Ex2 labels shape = ", y_train_ex2.shape)
 print("Ex3 data shape = ", X_test_ex3.shape)
 print("Ex3 labels shape = ", y_test_ex3.shape)
 
-# Fatal Reshape error
-# X_train_ex1 = X_train_ex1.reshape(X_train_ex1.shape[0], X_train_ex1.shape[3], X_train_ex1.shape[2], X_train_ex1.shape[1])
-# X_train_ex2 = X_train_ex2.reshape(X_train_ex2.shape[0], X_train_ex2.shape[3], X_train_ex2.shape[2], X_train_ex2.shape[1])
-# X_test_ex3 = X_test_ex3.reshape(X_test_ex3.shape[0], X_test_ex3.shape[3], X_test_ex3.shape[2], X_test_ex3.shape[1])
-
 X_train_ex1 = np.swapaxes(X_train_ex1, 1,3)
 X_train_ex2 = np.swapaxes(X_train_ex2, 1,3)
 X_test_ex3 = np.swapaxes(X_test_ex3, 1,3)
 
 
-
-
-
-# X_train_ex1 = naiveReshape(X_train_ex1, target_pixel_size=66)
-# X_test_ex2 = naiveReshape(X_test_ex2, target_pixel_size=66)
 print("Combining Ex1 and Ex2 for training:")
 X_train_c = np.vstack([X_train_ex1, X_train_ex2])
 y_train_c = np.append(y_train_ex1, y_train_ex2)
@@ -148,19 +150,24 @@ X_train, y_train, X_test, y_test = split_train_test(X_train_c, y_train_c, split=
 print("Reshaping done. Use Test, Train and Evaluation Data")
 print("Shape training data:", X_train.shape)
 print("Shape training evaluation data:", X_test.shape)
+# code.interact(local=dict(globals(), **locals()))
 
 X_train = X_train[y_train!=4,:]
 y_train = y_train[y_train!=4]
+y_train = convertLabels(y_train)
 X_test = X_test[y_test!=4,:]
 y_test = y_test[y_test!=4]
+y_test = convertLabels(y_test)
 X_test_ex3 = X_test_ex3[y_test_ex3!=4,:]
 y_test_ex3 = y_test_ex3[y_test_ex3!=4]
+y_test_ex3 = convertLabels(y_test_ex3)
 print("- removed the last class for comparison with cell profiler")
 print("Selecting channels:", channels)
 X_train = X_train[:,:,:,channels]
 X_test = X_test[:,:,:,channels]
 X_test_ex3 = X_test_ex3[:,:,:,channels]
 
+# code.interact(local=dict(globals(), **locals()))
 if data_augmentation:
     print("Data augmentation")
     X_train_l = X_train[:,:,::-1,:]
@@ -170,36 +177,45 @@ if data_augmentation:
     y_train = np.append(y_train, np.append(y_train, np.append(y_train, y_train)))
 
 
-path = "/home/moritz_berthold/dl/cellmodels/deepflow/120617/"
+
+path = "/home/moritz_berthold/dl/cellmodels/deepflow/130717/"
+csv_logger_path = path + "checkpoints/" + 'new_r2b_only_PGP_train_resize' + str(resize) + '.csv'
+checkpoint_path = path + "checkpoints/" + 'new_r2b_only_PGP_train_resize=' + str(resize) + '.hdf5'
+
 
 #### TRAINING ####
 if train:
-    model = deepflow(channels, n_classes, lr, momentum, decay)
+    model = deepflow(channels, n_classes, lr, momentum, decay, resize)
     change_lr = LearningRateScheduler(schedule)
-    csvlog = CSVLogger(path+'new_r2b_only_PGP_train_log_no_bs.csv', append=True)
-    checkpoint = ModelCheckpoint(path+'checkpoints/'+ 'PGP_only_r2b_checkpoint_no_bs.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+    csvlog = CSVLogger(csv_logger_path, append=True)
+    checkpoint = ModelCheckpoint(checkpoint_path, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
     callbacks = [
         change_lr,
         csvlog,
         checkpoint,
     ]
     model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, shuffle=True, verbose=2, validation_data=(X_test, y_test), callbacks=callbacks)
+    del(model) # load weigths instead
+    model = load_model(checkpoint_path)
 
 if not train:
-    print("Loading trained model", modelpath)
-    model = load_model(modelpath)
+    print("Loading trained model", checkpoint_path)
+    model = load_model(checkpoint_path)
 
+print("TrainDF")
 #### EVALUATION EX1 + Ex2 ####
 predictions_valid = model.predict(X_train.astype('float32'), batch_size=batch_size, verbose=2)
-log_loss_train = log_loss(y_train, predictions_valid)
-print('Score log_loss train: ', log_loss_train)
+# log_loss_train = log_loss(y_train, predictions_valid)
+# print('Score log_loss train: ', log_loss_train)
 acc_train = model.evaluate(X_train.astype('float32'), y_train, verbose=0)
 print("Score accuracy train: %.2f%%" % (acc_train[1]*100))
+acc_val = model.evaluate(X_test.astype('float32'), y_test, verbose=0)
+print("Score accuracy val: %.2f%%" % (acc_val[1]*100))
 
 #### EVALUATION EX3 ####
 predictions_valid_test = model.predict(X_test_ex3.astype('float32'), batch_size=batch_size, verbose=2)
-log_loss_test = log_loss(y_test_ex3, predictions_valid_test)
-print('Score log_loss test: ', log_loss_test)
+# log_loss_test = log_loss(y_test_ex3, predictions_valid_test)
+# print('Score log_loss test: ', log_loss_test)
 acc_test = model.evaluate(X_test_ex3.astype('float32'), y_test_ex3, verbose=0)
 print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
 
@@ -207,7 +223,7 @@ print("Score accuracy test: %.2f%%" % (acc_test[1]*100))
 
 #### Saving Model ####
 if train & modelsave:
-    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/140617_augmented_r2b+-_prediction_ch_no_bs" + str(channels) + "_bs=" + str(batch_size) + \
+    modelname = "/home/moritz_berthold/dl/cellmodels/deepflow/new_r2b_only_PGP_train_resize" + str(resize) + "_ch_" + str(channels) + "_bs=" + str(batch_size) + \
             "_epochs=" + str(epochs) + "_norm=" + str(data_normalization) + "_aug=" + str(data_augmentation) + "_split=" + str(split) + "_lr1=" + str(lr)  + \
             "_momentum=" + str(momentum)  + "_decay1=" + str(decay) +  \
             "_change_epoch=" + str(change_epoch) + "_decay2=" + str(decay2) + \
@@ -215,6 +231,26 @@ if train & modelsave:
     model.save(modelname)
     print("saved model")
 
+if save_outcomes:
+    import h5py
+    h5f = h5py.File('new_r2b_only_PGP_train_resize' + str(resize) + '_eps','w')
+    h5f.create_dataset('predictions_valid_test', data = predictions_valid_test)
+    h5f.create_dataset('y_test_ex3', data = y_test_ex3)
+    h5f.close()
 
+
+tb = pd.read_table(csv_logger_path, delimiter=",")
+
+plt.plot(acc,c='r',alpha=0.5, linewidth=3)
+plt.plot(val_acc,c='blue',alpha=0.5, linewidth=3)
+plt.xlim([0, acc.size])
+plt.ylim([0, 1])
+# plt.ylim([0, np.max([np.max(loss), np.max(val_loss)])])
+plt.title("Learning curves, train and val accuracies")
+plt.ylabel('Accuracy')
+plt.xlabel('Training epochs')
+plt.show()
 code.interact(local=dict(globals(), **locals()))
+
+
 plotBothConfusionMatrices(np.argmax(predictions_valid_test, axis=1), y_test_ex3, class_names)
